@@ -1,8 +1,10 @@
 // components/NavigationBar.js
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
+import styles from '../styles';
 
-export default function NavigationBar({ styles, currentView, setCurrentView }) {
+
+export default function NavigationBar({  currentView, setCurrentView }) {
   const items = [
     { key: 'today', label: 'Today' },
     { key: 'tasks', label: 'Tasks' },
