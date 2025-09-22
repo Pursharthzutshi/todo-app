@@ -1,4 +1,3 @@
-// components/TodoListView.js
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import TaskCard from './TaskCard.js';
