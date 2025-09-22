@@ -1,8 +1,7 @@
 // components/NavigationBar.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import styles from '../styles';
-
 
 export default function NavigationBar({  currentView, setCurrentView }) {
   const items = [
@@ -12,19 +11,20 @@ export default function NavigationBar({  currentView, setCurrentView }) {
     { key: 'todo', label: 'To-Do' },
   ];
 
+  const [test, setTest] = React.useState(false);
+
+  // useEffect(()=>{
+  //   console.log(test)
+  // },[test])
+
   return (
     <View style={styles.navigation}>
       {items.map((item) => (
-        <TouchableOpacity
-          key={item.key}
-          style={[styles.navButton, currentView === item.key && styles.activeNavButton]}
-          onPress={() => setCurrentView(item.key)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={[styles.navText, currentView === item.key && styles.activeNavText]}>
+          <div onClick={() => setCurrentView(item.key)}>
+          <Text onClick={()=> setTest()} style={[styles.navText, currentView === item.key && styles.activeNavText]}>
             {item.label}
           </Text>
-        </TouchableOpacity>
+          </div>
       ))}
     </View>
   );

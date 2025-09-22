@@ -9,10 +9,24 @@ export default function TodayView({
   showMenu, setShowMenu,
   activeFilter, setActiveFilter,
   newTask, setNewTask, addTask,
-  filteredTasks, toggleTask, toggleImportant,
+  filteredTasks = [], // default to empty array
+  toggleTask, toggleImportant,
   title = 'Today',
   dateLabel,
 }) {
+  const [searchAllTodoListItem, setSearchAllTodoListItem] = React.useState("");
+
+  // normalize search string once
+  const query = searchAllTodoListItem.trim().toLowerCase();
+
+  // filter tasks (case-insensitive substring match on title)
+  const visibleTasks = query.length === 0
+    ? filteredTasks
+    : filteredTasks.filter(task => {
+        const t = (task.title || '').toLowerCase();
+        return t.includes(query);
+      });
+
   return (
     <View style={styles.innerContainer}>
       <View style={styles.header}>
@@ -24,7 +38,7 @@ export default function TodayView({
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.searchButton} hitSlop={{ top: 10 }}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Text style={styles.searchIcon}></Text>
         </TouchableOpacity>
       </View>
 
@@ -54,6 +68,15 @@ export default function TodayView({
         ))}
       </View>
 
+      <TextInput
+        style={styles.searchTodoInput}
+        placeholder="Search..."
+        placeholderTextColor="#999"
+        value={searchAllTodoListItem}
+        onChangeText={setSearchAllTodoListItem}
+        returnKeyType="search"
+      />
+
       <View style={styles.addTaskContainer}>
         <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
           <Text style={styles.addTaskIcon}>+</Text>
@@ -70,7 +93,7 @@ export default function TodayView({
       </View>
 
       <ScrollView style={styles.taskList} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + 120 }}>
-        {filteredTasks.map((task) => (
+        {visibleTasks.map((task) => (
           <TaskCard
             key={task.id}
             task={task}

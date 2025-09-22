@@ -62,4 +62,6 @@ export default StyleSheet.create({
 
   searchContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, paddingHorizontal: 8 },
   searchInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
+
+  searchTodoInput :{ borderColor:"red",marginTop:12, borderWidth:2, borderRadius:8, height:40, paddingHorizontal:10}
 });

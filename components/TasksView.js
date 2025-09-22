@@ -24,7 +24,7 @@ export default function TasksView({
       </View>
 
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Text style={styles.searchIcon}></Text>
         <TextInput
           style={styles.searchInput}
           placeholder="Search tasks"
