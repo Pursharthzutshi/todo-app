@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SafeAreaView } from 'react-native';
 import TodayView from './components/TodayView';
-import TodoListView from './components/TodoListView';
+import ProgressPage from './components/ProgressPage';
 import TasksView from './components/TasksView';
 import FooterNavigationBar from './components/FooterNavigationBar';
 import styles from './styles';
@@ -135,8 +135,8 @@ export default function App() {
         return <TodayView {...commonProps} dateLabel={new Date().toDateString()} />;
       case 'mytasks':
         return <TodayView {...commonProps} title="My Tasks" dateLabel={new Date().toDateString()} />;
-      case 'todo':
-        return <TodoListView {...commonProps} />;
+      case 'progress':
+        return <ProgressPage {...commonProps} />;
       case 'tasks':
         return <TasksView {...commonProps} searchQuery={searchQuery} setSearchQuery={setSearchQuery} setCurrentView={setCurrentView} />;
       default:
