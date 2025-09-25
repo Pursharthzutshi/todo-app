@@ -4,9 +4,9 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   appContainer: { flex: 1, backgroundColor: '#fff' },
 
-  innerContainer: { flex: 1, padding: 16, paddingBottom: 80 },
+  innerContainer: { flex: 1, padding: 16},
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  menuButton: { padding: 8 },
+  menuButton: { padding: 8 , marginTop:48},
   hamburger: { width: 22, justifyContent: 'center' },
   hamburgerLine: { height: 2, marginVertical: 2, backgroundColor: '#222' },
   searchButton: { padding: 8 },
@@ -22,14 +22,14 @@ export default StyleSheet.create({
   filterText: { color: '#333' },
   activeFilterText: { color: '#fff' },
 
-  addTaskContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  addTaskContainer: { flexDirection: 'row', alignItems: 'center',marginTop:12, marginBottom: 22, gap:20 },
   addTaskButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222', marginRight: 8 },
   addTaskIcon: { color: '#fff', fontSize: 22 },
   addTaskInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
 
   todoInput: { height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
 
-  taskList: { flex: 1 },
+  taskList: { flex: 1},
 
   taskCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, backgroundColor: '#fafafa', marginBottom: 10 },
   checkbox: { width: 28, height: 28, borderRadius: 6, borderWidth: 1, borderColor: '#ccc', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
@@ -47,11 +47,11 @@ export default StyleSheet.create({
   fab: { position: 'absolute', right: 18, bottom: 22, width: 56, height: 56, borderRadius: 28, backgroundColor: '#222', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   fabIcon: { color: '#fff', fontSize: 26 },
 
-  navigation: { height: 60, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#eee', backgroundColor: '#fff' },
+  FooterNavigationBar: { marginBottom: 50, height: 60, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, backgroundColor: 'black', color:"white" },
   navButton: { padding: 10 },
   activeNavButton: { borderTopWidth: 2, borderTopColor: '#222' },
-  navText: { color: '#777' },
-  activeNavText: { color: '#222' },
+  navText: { color: 'white' },
+  activeNavText: { color: 'white',borderBlockColor:"white"},
 
   headerTitle: { fontSize: 18, fontWeight: '600' },
   moreButton: { padding: 8 },
@@ -63,5 +63,5 @@ export default StyleSheet.create({
   searchContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, paddingHorizontal: 8 },
   searchInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
 
-  searchTodoInput :{ borderColor:"red",marginTop:12, borderWidth:2, borderRadius:8, height:40, paddingHorizontal:10}
+  searchTodoInput :{ borderColor:"black",marginTop:12, borderWidth:2, borderRadius:8, height:40, paddingHorizontal:10}
 });

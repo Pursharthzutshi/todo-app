@@ -1,7 +1,8 @@
 // components/TodayView.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import TaskCard from './TaskCard.js';
+
 
 export default function TodayView({
   styles,
@@ -13,6 +14,7 @@ export default function TodayView({
   toggleTask, toggleImportant,
   title = 'Today',
   dateLabel,
+  savedTodoTasks
 }) {
   const [searchAllTodoListItem, setSearchAllTodoListItem] = React.useState("");
 
@@ -27,15 +29,23 @@ export default function TodayView({
         return t.includes(query);
       });
 
+
+  useEffect(() => {
+    console.log({filteredTasks})
+    console.log({savedTodoTasks})
+  },[savedTodoTasks])
+
+    
+
   return (
     <View style={styles.innerContainer}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <View style={styles.hamburger}>
+          {/* <View style={styles.hamburger}>
             <View style={styles.hamburgerLine} />
             <View style={styles.hamburgerLine} />
             <View style={styles.hamburgerLine} />
-          </View>
+          </View> */}
         </TouchableOpacity>
         <TouchableOpacity style={styles.searchButton} hitSlop={{ top: 10 }}>
           <Text style={styles.searchIcon}></Text>
@@ -70,7 +80,7 @@ export default function TodayView({
 
       <TextInput
         style={styles.searchTodoInput}
-        placeholder="Search..."
+        placeholder="Search Your Todo's"
         placeholderTextColor="#999"
         value={searchAllTodoListItem}
         onChangeText={setSearchAllTodoListItem}
@@ -78,9 +88,6 @@ export default function TodayView({
       />
 
       <View style={styles.addTaskContainer}>
-        <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
-          <Text style={styles.addTaskIcon}>+</Text>
-        </TouchableOpacity>
         <TextInput
           style={styles.addTaskInput}
           placeholder="Add a new task..."
@@ -90,9 +97,13 @@ export default function TodayView({
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
+        <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
+          <Text style={styles.addTaskIcon}>+</Text>
+        </TouchableOpacity>
+
       </View>
 
-      <ScrollView style={styles.taskList} contentContainerStyle={{ paddingBottom: NAV_HEIGHT + 120 }}>
+      <ScrollView style={styles.taskList} >
         {visibleTasks.map((task) => (
           <TaskCard
             key={task.id}
@@ -104,9 +115,6 @@ export default function TodayView({
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={addTask} hitSlop={{ top: 12 }}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
     </View>
   );
 }
