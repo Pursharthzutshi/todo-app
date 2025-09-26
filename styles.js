@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   appContainer: { flex: 1, backgroundColor: '#fff' },
 
-  innerContainer: { flex: 1, padding: 16},
+  innerContainer: { flex: 1, padding: 16, marginTop:10},
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   menuButton: { padding: 8 , marginTop:48},
   hamburger: { width: 22, justifyContent: 'center' },
@@ -22,10 +22,10 @@ export default StyleSheet.create({
   filterText: { color: '#333' },
   activeFilterText: { color: '#fff' },
 
-  addTaskContainer: { flexDirection: 'row', alignItems: 'center',marginTop:12, marginBottom: 22, gap:20 },
+  addTaskContainer: { flexDirection: 'column',marginTop:12, marginBottom: 22, gap:20 },
   addTaskButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222', marginRight: 8 },
   addTaskIcon: { color: '#fff', fontSize: 22 },
-  addTaskInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
+  addTaskInput: {  borderRadius: 8, borderWidth: 1, height:50, borderColor: '#e0e0e0', paddingHorizontal: 15 },
 
   todoInput: { height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
 
@@ -67,10 +67,16 @@ export default StyleSheet.create({
 
   // Progress Page 
 // shadowOffset: { width: 0.5, height: 0.1 },
-  progressBarBox: {display:"flex",flexDirection:"row" , height:180, backgroundColor:"whitesmoke", borderRadius:16, marginTop:20, justifyContent:"space-evenly", alignItems:"center"},
+  progressBarBox: {display:"flex",flexDirection:"row", borderWidth:.1 , height:190, backgroundColor:"white", borderRadius:16, marginTop:20, justifyContent:"space-evenly", alignItems:"center"},
 
-  totalTasksCompleteBox: {display:"flex", width:140 , padding: 15, flexDirection:"row" , backgroundColor:"white", borderRadius:16, marginTop:20},
+  totalTasksCompleteBox: {display:"flex" , padding: 3, flexDirection:"row" , backgroundColor:"white", borderRadius:16, marginTop:20},
 
-  totalTasksCompleteBoxTitle: {color:"black", fontWeight:"900", fontSize:12, padding:18},
+  totalTasksCompleteBoxTitle: {color:"black", fontWeight:"900", fontSize:28, padding:18},
+
+  tasksCompletionInformationParentBox: {display:"flex",  borderWidth:.1,flexDirection:"row" , height:180, backgroundColor:"white", borderRadius:16, marginTop:20, justifyContent:"space-evenly", alignItems:"center"},
+
+  tasksCompletionInformationBox: { padding:9, width:98, borderColor:"grey" ,backgroundColor: "white", borderWidth:2, borderColor:"black", borderDashed: "dashed", display:"flex",flexDirection:"column",alignItems:"center" , textAlign:"center"},
+
+  bottomBarBoxes:{ padding:13, width:120, height:80, borderColor:"grey" ,backgroundColor: "black", borderColor:"black", borderRadius:16, display:"flex",flexDirection:"row",alignItems:"center" , justifyContent:"center"}
 
 });

@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import TaskCard from './TaskCard.js';
+import { SelectList } from 'react-native-dropdown-select-list'
 
 
 export default function TodayView({
@@ -17,6 +18,7 @@ export default function TodayView({
   savedTodoTasks
 }) {
   const [searchAllTodoListItem, setSearchAllTodoListItem] = React.useState("");
+  const [selected, setSelected] = React.useState("");
 
   // normalize search string once
   const query = searchAllTodoListItem.trim().toLowerCase();
@@ -97,11 +99,29 @@ export default function TodayView({
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
-        <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
+
+         <Dropw
+          style={styles.addTaskInput}
+          placeholder="Add a new task..."
+          placeholderTextColor="#999"
+          value={newTask}
+          onChangeText={setNewTask}
+          onSubmitEditing={addTask}
+          returnKeyType="done"
+        />
+        
+   
+        <View>
+
+<View>
+       <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
           <Text style={styles.addTaskIcon}>+</Text>
         </TouchableOpacity>
-
+</View>
+        </View>
       </View>
+
+
 
       <ScrollView style={styles.taskList} >
         {visibleTasks.map((task) => (

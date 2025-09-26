@@ -17,6 +17,7 @@
     "react-dom": "^19.1.0",
     "react-native": "0.81.4",
     "react-native-circular-progress-indicator": "^4.4.2",
+    "react-native-dropdown-select-list": "^2.0.5",
     "react-native-svg": "^15.13.0",
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "^0.21.1"

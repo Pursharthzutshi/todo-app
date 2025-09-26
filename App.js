@@ -52,7 +52,7 @@ export default function App() {
       const trimmed = (newTask || '').trim();
       if (!trimmed) return;
 
-      const taskItem = { id: String(Date.now()), title: trimmed, completed: false, important: false };
+      const taskItem = { id: String(Date.now()), title: trimmed, completed: false, important: false, priority: "low" };
       // update tasks state based on previous value and get new list
       setTasks(prev => {
         const newList = [taskItem, ...prev];
@@ -71,10 +71,21 @@ export default function App() {
     }
   }
 
+
+
   // Toggle and important handlers should also persist the updated list
   function toggleTask(id) {
     setTasks(prev => {
       const newList = prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+      setSavedTodoTasks(newList);
+      return newList;
+    });
+  }
+
+  function TaskPriority(){
+      setTasks(prev => {
+      const newList = prev.map(t => t.id === id ? { ...t, priority: t.priority } : t);
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
       setSavedTodoTasks(newList);
       return newList;
