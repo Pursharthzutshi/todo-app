@@ -18,6 +18,7 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [newTask, setNewTask] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPriority, setSelectedPriority] = React.useState("");
 
   const [savedTodoTasks, setSavedTodoTasks] = useState([]); // keep this an array
   const [tasks, setTasks] = useState([
@@ -52,7 +53,7 @@ export default function App() {
       const trimmed = (newTask || '').trim();
       if (!trimmed) return;
 
-      const taskItem = { id: String(Date.now()), title: trimmed, completed: false, important: false, priority: "low" };
+      const taskItem = { id: String(Date.now()), title: trimmed, completed: false, important: false, priority: selectedPriority };
       // update tasks state based on previous value and get new list
       setTasks(prev => {
         const newList = [taskItem, ...prev];
@@ -83,14 +84,14 @@ export default function App() {
     });
   }
 
-  function TaskPriority(){
-      setTasks(prev => {
-      const newList = prev.map(t => t.id === id ? { ...t, priority: t.priority } : t);
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList);
-      return newList;
-    });
-  }
+  // function TaskPriority(){
+  //     setTasks(prev => {
+  //     const newList = prev.map(t => t.id === id ? { ...t, priority: t.priority } : t);
+  //     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+  //     setSavedTodoTasks(newList);
+  //     return newList;
+  //   });
+  // }
 
   function toggleImportant(id) {
     setTasks(prev => {
@@ -137,7 +138,11 @@ export default function App() {
     filteredTasks,
     toggleTask,
     toggleImportant,
-    savedTodoTasks
+    savedTodoTasks,
+    selectedPriority,
+    setSelectedPriority,
+    selectedPriority,
+    setTasks
   };
 
   function renderCurrentView() {

@@ -11,14 +11,24 @@ export default function TodayView({
   showMenu, setShowMenu,
   activeFilter, setActiveFilter,
   newTask, setNewTask, addTask,
-  filteredTasks = [], // default to empty array
+  filteredTasks = [],
   toggleTask, toggleImportant,
   title = 'Today',
   dateLabel,
-  savedTodoTasks
+  savedTodoTasks,
+  selectedPriority,
+  setSelectedPriority,
+  setTasks
+  
 }) {
   const [searchAllTodoListItem, setSearchAllTodoListItem] = React.useState("");
-  const [selected, setSelected] = React.useState("");
+  
+  const data = [
+      {key:'1', value:'High'},
+      {key:'2', value:'Medium'},
+      {key:'3', value:'Low'},
+  ]
+
 
   // normalize search string once
   const query = searchAllTodoListItem.trim().toLowerCase();
@@ -99,7 +109,12 @@ export default function TodayView({
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
-
+      <SelectList 
+        setSelected={(val) => setSelectedPriority(val)} 
+        data={data} 
+        save="value"
+    />
+        {/* 
          <Dropw
           style={styles.addTaskInput}
           placeholder="Add a new task..."
@@ -109,25 +124,23 @@ export default function TodayView({
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
-        
+         */}
    
         <View>
-
-<View>
+      <View>
        <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
           <Text style={styles.addTaskIcon}>+</Text>
         </TouchableOpacity>
-</View>
+        </View>
         </View>
       </View>
-
-
 
       <ScrollView style={styles.taskList} >
         {visibleTasks.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
+            setTasks={setTasks}
             onToggle={() => toggleTask(task.id)}
             onToggleImportant={() => toggleImportant(task.id)}
             styles={styles}
