@@ -1,3 +1,4 @@
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -61,7 +62,7 @@ const CircularProgressBar = ({ progress = 75, size = 120, strokeWidth = 8, color
 };
 
 export default function ProgressPage({
-  styles,
+ styles,
  savedTodoTasks
 }) {
 
@@ -91,7 +92,7 @@ export default function ProgressPage({
   return (
     <View style={styles.innerContainer}>
       
-      <Icon name="arrow-back" size={28} />
+       <MaterialIcons name="arrow-back" size={24} color="black" />
 
       <View style={styles.progressBarBox}>
 

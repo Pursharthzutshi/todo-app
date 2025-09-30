@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   appContainer: { flex: 1, backgroundColor: '#fff' },
 
-  innerContainer: { flex: 1, padding: 16, marginTop:10},
+  innerContainer: { flex: 1, padding: 22, marginTop:16},
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   menuButton: { padding: 8 , marginTop:48},
   hamburger: { width: 22, justifyContent: 'center' },

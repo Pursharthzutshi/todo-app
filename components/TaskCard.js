@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons'; // ✅ correct import for Expo
 
-export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, styles }) {
+export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, onToggleWishlist, styles }) {
 
   const deleteTodoTask = (id) => {
     console.log("Delete Task", id);
@@ -32,6 +32,10 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
       </View>
 
       <View style={styles.taskActions}>
+        <TouchableOpacity onPress={onToggleWishlist} hitSlop={{ top: 8 }}>
+          <Text style={styles.starIcon}>{task.wishlist ? '♥' : '♡'}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={onToggleImportant} hitSlop={{ top: 8 }}>
           <Text style={styles.starIcon}>{task.important ? '★' : '☆'}</Text>
           <Text>{task.priority}</Text>

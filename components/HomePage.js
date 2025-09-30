@@ -1,64 +1,53 @@
-// components/TodayView.js
-import React, { useEffect } from 'react';
+// components/.js
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import TaskCard from './TaskCard.js';
-import { SelectList } from 'react-native-dropdown-select-list'
+import { SelectList } from 'react-native-dropdown-select-list';
+import getVisibleTasks from './VisibleTasks.js';
 
-
-export default function TodayView({
+export default function HomePage({
   styles,
   NAV_HEIGHT,
   showMenu, setShowMenu,
   activeFilter, setActiveFilter,
   newTask, setNewTask, addTask,
   filteredTasks = [],
-  toggleTask, toggleImportant,
+  toggleTask,
+  toggleImportant,
+  toggleWishlist,
   title = 'Today',
   dateLabel,
   savedTodoTasks,
   selectedPriority,
   setSelectedPriority,
+  searchAllTodoListItem,
+  setSearchAllTodoListItem,
   setTasks
-  
 }) {
-  const [searchAllTodoListItem, setSearchAllTodoListItem] = React.useState("");
-  
   const data = [
-      {key:'1', value:'High'},
-      {key:'2', value:'Medium'},
-      {key:'3', value:'Low'},
-  ]
-
-
-  // normalize search string once
-  const query = searchAllTodoListItem.trim().toLowerCase();
-
-  // filter tasks (case-insensitive substring match on title)
-  const visibleTasks = query.length === 0
-    ? filteredTasks
-    : filteredTasks.filter(task => {
-        const t = (task.title || '').toLowerCase();
-        return t.includes(query);
-      });
-
+    { key: '1', value: 'High' },
+    { key: '2', value: 'Medium' },
+    { key: '3', value: 'Low' },
+  ];
 
   useEffect(() => {
-    console.log({filteredTasks})
-    console.log({savedTodoTasks})
-  },[savedTodoTasks])
+    console.log({ filteredTasks });
+    console.log({ savedTodoTasks });
+  }, [savedTodoTasks, filteredTasks]);
 
-    
+  const tasksToShow = useMemo(
+    () => getVisibleTasks(filteredTasks, searchAllTodoListItem),
+    [filteredTasks, searchAllTodoListItem]
+  );
 
   return (
     <View style={styles.innerContainer}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          {/* <View style={styles.hamburger}>
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-          </View> */}
-        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setShowMenu(!showMenu)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        />
         <TouchableOpacity style={styles.searchButton} hitSlop={{ top: 10 }}>
           <Text style={styles.searchIcon}></Text>
         </TouchableOpacity>
@@ -109,45 +98,31 @@ export default function TodayView({
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
-      <SelectList 
-        setSelected={(val) => setSelectedPriority(val)} 
-        data={data} 
-        save="value"
-    />
-        {/* 
-         <Dropw
-          style={styles.addTaskInput}
-          placeholder="Add a new task..."
-          placeholderTextColor="#999"
-          value={newTask}
-          onChangeText={setNewTask}
-          onSubmitEditing={addTask}
-          returnKeyType="done"
+        <SelectList
+          setSelected={(val) => setSelectedPriority(val)}
+          data={data}
+          save="value"
         />
-         */}
-   
         <View>
-      <View>
-       <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
-          <Text style={styles.addTaskIcon}>+</Text>
-        </TouchableOpacity>
-        </View>
+          <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
+            <Text style={styles.addTaskIcon}>+</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={styles.taskList} >
-        {visibleTasks.map((task) => (
+      <ScrollView style={styles.taskList}>
+        {tasksToShow.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
             setTasks={setTasks}
             onToggle={() => toggleTask(task.id)}
             onToggleImportant={() => toggleImportant(task.id)}
+            onToggleWishlist={() => toggleWishlist(task.id)}
             styles={styles}
           />
         ))}
       </ScrollView>
-
     </View>
   );
 }
