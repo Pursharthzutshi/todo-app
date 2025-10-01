@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-nativ
 import TaskCard from './TaskCard.js';
 import { SelectList } from 'react-native-dropdown-select-list';
 import getVisibleTasks from './VisibleTasks.js';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 export default function HomePage({
   styles,
@@ -51,6 +52,7 @@ export default function HomePage({
         <TouchableOpacity style={styles.searchButton} hitSlop={{ top: 10 }}>
           <Text style={styles.searchIcon}></Text>
         </TouchableOpacity>
+        
       </View>
 
       <View style={styles.titleSection}>
@@ -111,6 +113,7 @@ export default function HomePage({
       </View>
 
       <ScrollView style={styles.taskList}>
+        
         {tasksToShow.map((task) => (
           <TaskCard
             key={task.id}

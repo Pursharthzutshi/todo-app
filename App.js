@@ -178,6 +178,27 @@ export default function App() {
     }
   }
 
+    function allDays() {
+    switch (currentView) {
+      case 'Monday':
+        return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
+      case 'Tuesday':
+        return <WishlistPage {...commonProps} />;
+      case 'Wednesday':
+        return <ProgressPage {...commonProps} />;
+      case 'Thursday':
+        return <SettingsPage {...commonProps}  />;
+      case 'Friday':
+        return <SettingsPage {...commonProps}  />;
+      case 'Saturday':
+        return <SettingsPage {...commonProps}  />;
+      case 'Sunday':
+        return <SettingsPage {...commonProps}  />;
+      default:
+        return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
+    }
+  }
+
   return (
     <SafeAreaView style={styles.appContainer}>
       {renderCurrentView()}
@@ -187,6 +208,8 @@ export default function App() {
         setCurrentView={setCurrentView}
         NAV_HEIGHT={NAV_HEIGHT}
       />
+
+      {/* {allDays()} */}
     </SafeAreaView>
   );
 }

@@ -7,4 +7,4 @@ return(
         <Text>Settings Page</Text>
     </View>
 )
-}
+} 
