@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { TextInput } from 'react-native-web';
 
 export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, onToggleWishlist, styles }) {
+
+  // const [updateTodoTaskTitle,setUpdateTodoTaskTitle] = React.useState("");
 
   const deleteTodoTask = (id) => {
     console.log("Delete Task", id);
@@ -11,6 +14,15 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
       return updatedTasks;
     });
   };
+
+  const editTodoTask = (id) => {
+     setTasks(prev => {
+      const newList = prev.map(t => (t.id === id ? { ...t, title: updateTodoTaskTitle } : t));
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+      setSavedTodoTasks(newList);
+      return newList;
+    });
+  }
 
   return (
     <View style={styles.taskCard}>
@@ -23,21 +35,37 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
       </TouchableOpacity>
 
       
-
       <View style={styles.taskContent}>
 
         <View>
-
         <Text style={[styles.taskTitle, task.completed && styles.completedTask]}>
           {task.title}
         </Text>
 
+        {/* <TextInput /> */}
         </View>
 
         <Text style={styles.taskDetails}>
           {task.completed ? '(Completed)' : `${task.dueDate || ''}${task.time ? ` · ${task.time}` : ''}`}
         </Text>
-        <Text style={{borderStyle:"solid", borderColor:"black", justifyContent:"center", textAlign:"center", color:"white", borderRadius: 10, padding: 3 , backgroundColor:"black", borderWidth:1, width:70, marginTop:12}}>{task.priority}</Text>
+{/*         
+        <Text style={styles.priorityTaskText}>
+          {
+        task.priority
+        }</Text> */}
+        <Text
+  style={[
+    styles.priorityTaskText,
+    task.priority === 'High'
+      ? { color: 'red' }
+      : task.priority === 'Medium'
+      ? { color: 'orange' }
+      : { color: 'green' },
+  ]}
+>
+  {task.priority}
+</Text>
+
       </View>
 
 
@@ -45,8 +73,8 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
 
       <View style={styles.taskActions}>
         
-        <TouchableOpacity onPress={() => deleteTodoTask(task.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <MaterialIcons name="edit" size={27} color="black" />
+        <TouchableOpacity onPress={() => editTodoTask(task.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <MaterialIcons name="edit" size={33} color="black" />
         </TouchableOpacity>    
          
         <TouchableOpacity onPress={onToggleImportant} hitSlop={{ top: 8 }}>

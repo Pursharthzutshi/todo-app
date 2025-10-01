@@ -59,7 +59,7 @@ checkmark: {
 
   taskContent: { flex: 1 },
   taskTitle: { fontSize: 16 },
-  completedTask: { textDecorationLine: 'line-through', color: 'green' },
+  completedTask: { textDecorationLine: 'line-through', color: 'red' },
   taskDetails: { color: '#777', marginTop: 4 },
 
   taskActions: {  display:"flex", flexDirection: 'row' ,marginLeft: 8, gap: 5, justifyContent: 'center', alignItems: 'center' },
@@ -98,6 +98,11 @@ checkmark: {
 
   tasksCompletionInformationBox: { padding:9, width:98, borderColor:"grey" ,backgroundColor: "white", borderWidth:2, borderColor:"black", borderDashed: "dashed", display:"flex",flexDirection:"column",alignItems:"center" , textAlign:"center"},
 
-  bottomBarBoxes:{ padding:13, width:120, height:80, borderColor:"grey" ,backgroundColor: "black", borderColor:"black", borderRadius:16, display:"flex",flexDirection:"row",alignItems:"center" , justifyContent:"center"}
+  bottomBarBoxes:{ padding:13, width:120, height:80, borderColor:"grey" ,backgroundColor: "black", borderColor:"black", borderRadius:16, display:"flex",flexDirection:"row",alignItems:"center" , justifyContent:"center"},
+
+  priorityTaskText:{borderStyle:"solid", borderColor:"black", justifyContent:"center", textAlign:"center", color:"white", borderRadius: 10, padding: 3 , borderWidth:1, width:70, marginTop:12}
 
 });
+
+
+// backgroundColor:"red"
