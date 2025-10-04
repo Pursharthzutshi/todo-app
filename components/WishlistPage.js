@@ -35,7 +35,7 @@ return(
         {tasksToShow.filter((task) => (
             task.wishlist === true
         )).map((task) => (
-               <TaskCard
+            <TaskCard
             key={task.id}
             task={task}
             setTasks={setTasks}

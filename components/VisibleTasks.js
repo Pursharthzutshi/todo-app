@@ -1,6 +1,6 @@
 // components/VisibleTasks.js
 
-export default function getVisibleTasks(filteredTasks = [], searchAllTodoListItem = '') {
+export default function getVisibleTasks(filteredTasks = [], searchAllTodoListItem = '', currentDay) {
   const query = (searchAllTodoListItem || '').trim().toLowerCase();
 
   if (!query) return filteredTasks;

@@ -1,7 +1,7 @@
 // App.js
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -15,12 +15,20 @@ import FooterNavigationBar from './components/FooterNavigationBar';
 
 // Styles
 import styles from './styles';
+// import { AllDays } from './AllDays';
 
 // Constants
 const NAV_HEIGHT = 60;
 const STORAGE_KEY = 'TASKS';
 
 export default function App() {
+  
+  const Days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const [currentDay, setCurrentDay] = useState(() => new Date().getDate());
+
+  console.log("currentDay",currentDay)
+
   const [currentView, setCurrentView] = useState('today');
   const [showMenu, setShowMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -56,11 +64,15 @@ export default function App() {
     loadTasks();
   }, []);
 
+  console.log("day", new Date().toLocaleDateString('en-US', { weekday: 'long' }))
+
   // Add new task
   async function addTask() {
     try {
       const trimmed = (newTask || '').trim();
       if (!trimmed) return;
+      
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
       const taskItem = {
         id: String(Date.now()),
@@ -69,12 +81,13 @@ export default function App() {
         important: false,
         wishlist: false,
         priority: selectedPriority,
+        currentDay: days[new Date().getDay()]
       };
 
       setTasks(prev => {
         const newList = [taskItem, ...prev];
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => {
-          console.error('Failed to save tasks to AsyncStorage', e);
+          // console.error('Failed to save tasks to AsyncStorage', e);
         });
         setSavedTodoTasks(newList);
         return newList;
@@ -160,6 +173,11 @@ export default function App() {
     searchAllTodoListItem,
     setSearchAllTodoListItem,
     setTasks,
+    currentView,
+    setCurrentView,
+    currentDay,
+    setCurrentDay,
+    Days
   };
 
   // Render based on current view
@@ -172,36 +190,41 @@ export default function App() {
       case 'progress':
         return <ProgressPage {...commonProps} />;
       case 'settings':
-        return <SettingsPage {...commonProps}  />;
+        return <SettingsPage {...commonProps} />;
       default:
         return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
     }
   }
 
-    function allDays() {
-    switch (currentView) {
-      case 'Monday':
-        return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
-      case 'Tuesday':
-        return <WishlistPage {...commonProps} />;
-      case 'Wednesday':
-        return <ProgressPage {...commonProps} />;
-      case 'Thursday':
-        return <SettingsPage {...commonProps}  />;
-      case 'Friday':
-        return <SettingsPage {...commonProps}  />;
-      case 'Saturday':
-        return <SettingsPage {...commonProps}  />;
-      case 'Sunday':
-        return <SettingsPage {...commonProps}  />;
-      default:
-        return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
-    }
-  }
+  // function AllDaysView() {
+  //   switch (currentDay) {
+  //     case 'Sun':
+  //       return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
+  //     case 'Mon':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Tue':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Wed':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Thu':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Fri':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Sat':
+  //       return <WishlistPage {...commonProps} />;
+  //     case 'Sun':
+  //       return <WishlistPage {...commonProps} />;
+  //     default:
+  //       return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
+  //   }
+  // }
 
   return (
     <SafeAreaView style={styles.appContainer}>
+      {/* Day chips row */}
+      
       {renderCurrentView()}
+
       <FooterNavigationBar
         styles={styles}
         currentView={currentView}
@@ -209,7 +232,7 @@ export default function App() {
         NAV_HEIGHT={NAV_HEIGHT}
       />
 
-      {/* {allDays()} */}
+      {/* {AllDaysView()} */}
     </SafeAreaView>
   );
 }
