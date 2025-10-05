@@ -6,7 +6,7 @@ import TaskCard from './TaskCard';
 import { TextInput } from 'react-native';
 import { Text } from 'react-native';
 
-export default function WishlistPage({styles,searchAllTodoListItem,  filteredTasks = [],setTasks,setSearchAllTodoListItem,toggleWishlist}) {
+export default function WishlistPage({styles,searchAllTodoListItem, filteredTasks = [], setTasks, setSearchAllTodoListItem, toggleWishlist}) {
 
 const tasksToShow = useMemo(
         () => getVisibleTasks(filteredTasks, searchAllTodoListItem),

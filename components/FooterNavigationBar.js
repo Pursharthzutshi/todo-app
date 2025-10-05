@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../styles';
 import { useEffect } from 'react';
 
-export default function FooterNavigationBar({  currentView, setCurrentView }) {
+export default function FooterNavigationBar({currentView, setCurrentView}) {
   
   const items = [
     { key: 'home', label: 'Home' },
     { key: 'wishlist', label: 'Wishlist' },
     { key: 'progress', label: 'Progress' },
-    { key: 'todo', label: 'Settings' },
+    { key: 'settings', label: 'Settings' },
   ];
 
   useEffect(()=>{
