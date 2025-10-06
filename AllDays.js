@@ -1,5 +1,5 @@
-import { TouchableOpacity } from "react-native";
-import { ScrollView, Text, View } from "react-native";
+import React from 'react';
+import { TouchableOpacity, ScrollView, Text, View } from 'react-native';
 
 export default function AllDays({ Days, currentDay, setCurrentDay }) {
   return (
@@ -10,16 +10,15 @@ export default function AllDays({ Days, currentDay, setCurrentDay }) {
         contentContainerStyle={{ paddingHorizontal: 12 }}
       >
         {Days.map(day => {
-
-          // console.log("day",day)
-          console.log("currentDay",currentDay)
+          console.log("day", day);
+          console.log("currentDay", currentDay);
           
-          const isActive = currentDay === day;
+          const isActive = currentDay === day.id;
 
           return (
             <TouchableOpacity
-              key={day}
-              onPress={() => setCurrentDay(day)}
+              key={day.id}  // Fixed: Use unique day.id as key
+              onPress={() => setCurrentDay(day.id)}  // Fixed: Pass day.id instead of day object
               style={{
                 paddingVertical: 8,
                 paddingHorizontal: 9,
@@ -31,8 +30,11 @@ export default function AllDays({ Days, currentDay, setCurrentDay }) {
                 backgroundColor: isActive ? '#EEF2FF' : 'white',
               }}
             >
-              <Text style={{ fontWeight: isActive ? '700' : '500', color: isActive ? '#3730A3' : '#111827' }}>
-                {day}
+              <Text style={{ 
+                fontWeight: isActive ? '700' : '500', 
+                color: isActive ? '#3730A3' : '#111827' 
+              }}>
+                {day.name}
               </Text>
             </TouchableOpacity>
           );

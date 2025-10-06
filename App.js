@@ -1,7 +1,5 @@
-// App.js
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -15,7 +13,6 @@ import FooterNavigationBar from './components/FooterNavigationBar';
 
 // Styles
 import styles from './styles';
-// import { AllDays } from './AllDays';
 
 // Constants
 const NAV_HEIGHT = 60;
@@ -23,11 +20,20 @@ const STORAGE_KEY = 'TASKS';
 
 export default function App() {
   
-  const Days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const Days = [
+    { id: 0, name: 'Sun' },
+    { id: 1, name: 'Mon' },
+    { id: 2, name: 'Tue' },
+    { id: 3, name: 'Wed' },
+    { id: 4, name: 'Thu' },
+    { id: 5, name: 'Fri' },
+    { id: 6, name: 'Sat' },
+  ];
 
-  const [currentDay, setCurrentDay] = useState(() => new Date().getDate());
+  // Fixed: Use getDay() instead of getDate() to get day of week (0-6)
+  const [currentDay, setCurrentDay] = useState(() => new Date().getDay());
 
-  console.log("currentDay",currentDay)
+  console.log("currentDay", currentDay);
 
   const [currentView, setCurrentView] = useState('today');
   const [showMenu, setShowMenu] = useState(false);
@@ -64,7 +70,7 @@ export default function App() {
     loadTasks();
   }, []);
 
-  console.log("day", new Date().toLocaleDateString('en-US', { weekday: 'long' }))
+  console.log("day", new Date().toLocaleDateString('en-US', { weekday: 'long' }));
 
   // Add new task
   async function addTask() {
@@ -81,13 +87,14 @@ export default function App() {
         important: false,
         wishlist: false,
         priority: selectedPriority,
+        currentDate: new Date().getDay(),  
         currentDay: days[new Date().getDay()]
       };
 
       setTasks(prev => {
         const newList = [taskItem, ...prev];
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => {
-          // console.error('Failed to save tasks to AsyncStorage', e);
+          console.error('Failed to save tasks to AsyncStorage', e);
         });
         setSavedTodoTasks(newList);
         return newList;
@@ -141,8 +148,12 @@ export default function App() {
       list = list.filter(t => t.important);
     } else if (activeFilter === 'planned') {
       list = list.filter(t => !!t.dueDate);
-    }
-
+    }else {
+    // When 'all' filter is active, filter by currentDay
+    list = list.filter(t => t.currentDate === currentDay);
+  }
+  //  console.log(currentDay)
+   
     // Filter by search query (TasksView search)
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -150,7 +161,7 @@ export default function App() {
     }
 
     return list;
-  }, [tasks, activeFilter, searchQuery]);
+  }, [tasks, activeFilter, searchQuery,currentDay]);
 
   // Common props shared across all pages
   const commonProps = {
@@ -196,32 +207,8 @@ export default function App() {
     }
   }
 
-  // function AllDaysView() {
-  //   switch (currentDay) {
-  //     case 'Sun':
-  //       return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
-  //     case 'Mon':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Tue':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Wed':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Thu':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Fri':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Sat':
-  //       return <WishlistPage {...commonProps} />;
-  //     case 'Sun':
-  //       return <WishlistPage {...commonProps} />;
-  //     default:
-  //       return <HomePage {...commonProps} dateLabel={new Date().toDateString()} />;
-  //   }
-  // }
-
   return (
     <SafeAreaView style={styles.appContainer}>
-      {/* Day chips row */}
       
       {renderCurrentView()}
 
@@ -231,8 +218,6 @@ export default function App() {
         setCurrentView={setCurrentView}
         NAV_HEIGHT={NAV_HEIGHT}
       />
-
-      {/* {AllDaysView()} */}
     </SafeAreaView>
   );
 }

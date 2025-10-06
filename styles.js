@@ -23,15 +23,23 @@ export default StyleSheet.create({
   activeFilterText: { color: '#fff' },
 
   addTaskContainer: { flexDirection: 'column',marginTop:12, marginBottom: 22, gap:20 },
-  addTaskButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222', marginRight: 8 },
-  addTaskIcon: { color: '#fff', fontSize: 22 },
+  addTaskButton: {  height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222', marginRight: 8,paddingBottom:4 },
+  plusIcon:{fontSize:22},
+  addTaskIcon: { color: '#fff', fontSize: 15 },
   addTaskInput: {  borderRadius: 8, borderWidth: 1, height:50, borderColor: '#e0e0e0', paddingHorizontal: 15 },
 
   todoInput: { height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
 
   taskList: { flex: 1},
 
-  taskCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, backgroundColor: 'white', borderWidth:.5, borderColor:"black", borderStyle:"solid"  },
+  taskCard: { flexDirection: 'row', alignItems: 'center', borderWidth:.5, padding: 12, backgroundColor: 'white', borderColor:"black", borderStyle:"solid"  },
+  
+  searchContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, paddingHorizontal: 8 },
+  
+  searchInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
+
+  searchTodoInput: { borderColor:"black",marginTop:12, borderTopWidth:1,borderLeftWidth:1,borderRightWidth:1.4, borderRadius:4, height:40, paddingHorizontal:10},
+
   // taskCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, backgroundColor: '#fafafa',shadowColor: '#000', shadowOffset: { width: 4, height: 2 },    elevation: 1,   shadowOpacity: 0.25, borderRadius: 10, marginBottom: 10 },
 checkbox: {
   width: 30,
@@ -80,11 +88,6 @@ checkmark: {
 
   backButton: { padding: 8 },
   backIcon: { fontSize: 18 },
-
-  searchContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, paddingHorizontal: 8 },
-  searchInput: { flex: 1, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 10 },
-
-  searchTodoInput: { borderColor:"black",marginTop:12, borderWidth:2, borderRadius:8, height:40, paddingHorizontal:10},
 
   // Progress Page 
 // shadowOffset: { width: 0.5, height: 0.1 },

@@ -1,9 +1,0 @@
-
-  function TaskPriority(){
-      setTasks(prev => {
-      const newList = prev.map(t => t.id === id ? { ...t, priority: t.priority } : t);
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList);
-      return newList;
-    });
-  }
