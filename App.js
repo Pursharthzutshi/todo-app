@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -19,6 +19,12 @@ const NAV_HEIGHT = 60;
 const STORAGE_KEY = 'TASKS';
 
 export default function App() {
+  // App settings
+  const [theme, setTheme] = useState('Light');
+  const [fontSize, setFontSize] = useState('Medium');
+  
+  // Force re-render when theme or font size changes
+  const [forceUpdate, setForceUpdate] = useState(0);
   
   const Days = [
     { id: 0, name: 'Sun' },
@@ -49,10 +55,11 @@ export default function App() {
     { id: '3', title: 'Call mom', completed: false, important: true },
   ]);
 
-  // Load tasks from AsyncStorage when app mounts
+  // Load tasks and settings from AsyncStorage when app mounts
   useEffect(() => {
-    async function loadTasks() {
+    async function loadData() {
       try {
+        // Load tasks
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
@@ -63,11 +70,18 @@ export default function App() {
             console.warn('Stored tasks is not an array, ignoring.');
           }
         }
+        
+        // Load settings
+        const savedTheme = await AsyncStorage.getItem('theme');
+        const savedFontSize = await AsyncStorage.getItem('fontSize');
+        
+        if (savedTheme) setTheme(savedTheme);
+        if (savedFontSize) setFontSize(savedFontSize);
       } catch (err) {
-        console.error('Failed to load tasks from AsyncStorage', err);
+        console.error('Failed to load data from AsyncStorage', err);
       }
     }
-    loadTasks();
+    loadData();
   }, []);
 
   console.log("day", new Date().toLocaleDateString('en-US', { weekday: 'long' }));
@@ -163,9 +177,175 @@ export default function App() {
     return list;
   }, [tasks, activeFilter, searchQuery,currentDay]);
 
+  // Get dynamic styles based on theme and font size
+  const getAppStyles = () => {
+    // Apply theme and font size to styles
+    const baseStyles = styles;
+    
+    // Force re-render when theme or font size changes
+    console.log('Applying styles with theme:', theme, 'fontSize:', fontSize, 'forceUpdate:', forceUpdate);
+    
+    // Apply font size adjustments - make sure this is properly applied
+    let fontSizeMultiplier;
+    if (fontSize === 'Small') {
+      fontSizeMultiplier = 0.85;
+    } else if (fontSize === 'Large') {
+      fontSizeMultiplier = 1.3; // Increased for better visibility
+    } else {
+      fontSizeMultiplier = 1;
+    }
+    console.log('Applying font size:', fontSize);
+    console.log('Font size multiplier:', fontSizeMultiplier, 'for fontSize:', fontSize);
+    
+    // Apply theme adjustments with improved dark theme colors
+    const themeColors = theme === 'Dark' ? {
+      backgroundColor: '#121212',
+      textColor: '#ffffff',
+      cardBackground: '#1e1e1e',
+      borderColor: '#444444',
+      accentColor: '#bb86fc',
+      secondaryTextColor: '#e0e0e0',
+      buttonBackground: '#333333',
+      inputBackground: '#2a2a2a'
+    } : {
+      backgroundColor: '#ffffff',
+      textColor: '#000000',
+      cardBackground: '#fafafa',
+      borderColor: '#e0e0e0',
+      accentColor: '#6200ee',
+      secondaryTextColor: '#757575',
+      buttonBackground: '#f5f5f5',
+      inputBackground: '#ffffff'
+    };
+    
+    return {
+      ...baseStyles,
+      appContainer: { 
+        ...baseStyles.appContainer, 
+        backgroundColor: themeColors.backgroundColor 
+      },
+      innerContainer: { 
+        ...baseStyles.innerContainer, 
+        backgroundColor: themeColors.backgroundColor 
+      },
+      mainTitle: { 
+        ...baseStyles.mainTitle, 
+        fontSize: 28 * fontSizeMultiplier,
+        color: themeColors.textColor,
+        fontWeight: 'bold'
+      },
+      taskTitle: { 
+        ...baseStyles.taskTitle, 
+        fontSize: 16 * fontSizeMultiplier,
+        color: themeColors.textColor,
+        fontWeight: theme === 'Dark' ? '600' : '500'
+      },
+      settingLabel: {
+        fontSize: 18 * fontSizeMultiplier,
+        marginBottom: 10,
+        color: themeColors.textColor,
+        fontWeight: theme === 'Dark' ? '600' : '500'
+      },
+      settingValue: {
+        fontSize: 16 * fontSizeMultiplier,
+        color: theme === 'Dark' ? themeColors.accentColor : themeColors.textColor,
+        padding: 12,
+        backgroundColor: themeColors.inputBackground,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: themeColors.borderColor,
+        marginBottom: 16
+      },
+      text: {
+        fontSize: 14 * fontSizeMultiplier,
+        color: themeColors.textColor
+      },
+      buttonText: {
+        fontSize: 14 * fontSizeMultiplier,
+        color: themeColors.textColor
+      },
+      headerText: {
+        fontSize: 18 * fontSizeMultiplier,
+        fontWeight: 'bold',
+        color: themeColors.textColor
+      },
+      // Apply font size to all text elements
+      ...(Object.keys(baseStyles).reduce((acc, key) => {
+        // Apply font size to any style that might contain text
+        if (baseStyles[key] && typeof baseStyles[key] === 'object' && 
+            (key.toLowerCase().includes('text') || key.toLowerCase().includes('title') || 
+             key.toLowerCase().includes('label') || key.toLowerCase().includes('button'))) {
+          acc[key] = {
+            ...baseStyles[key],
+            fontSize: (baseStyles[key].fontSize || 14) * fontSizeMultiplier,
+            color: baseStyles[key].color || themeColors.textColor
+          };
+        }
+        return acc;
+      }, {})),
+      // Add more style overrides as needed
+    };
+  };
+  
+  // Get dynamic styles - recalculate when theme, fontSize or forceUpdate changes
+  const dynamicStyles = useMemo(() => {
+    console.log('Recalculating styles with fontSize:', fontSize);
+    return getAppStyles();
+  }, [theme, fontSize, forceUpdate]);
+  
+  // Define font size multiplier function
+  const getFontSizeMultiplier = (size) => {
+    if (size === 'Small') return 0.85;
+    if (size === 'Large') return 1.3;
+    return 1; // Medium is default
+  };
+  
+  // Define theme colors
+  const themeColors = {
+    Light: {
+      backgroundColor: '#ffffff',
+      textColor: '#000000',
+      cardBackground: '#fafafa',
+      borderColor: '#e0e0e0',
+      accentColor: '#6200ee',
+      secondaryTextColor: '#757575',
+      buttonBackground: '#f5f5f5',
+      inputBackground: '#ffffff'
+    },
+    Dark: {
+      backgroundColor: '#121212',
+      textColor: '#ffffff',
+      cardBackground: '#1e1e1e',
+      borderColor: '#444444',
+      accentColor: '#bb86fc',
+      secondaryTextColor: '#e0e0e0',
+      buttonBackground: '#333333',
+      inputBackground: '#2a2a2a'
+    }
+  };
+
   // Common props shared across all pages
   const commonProps = {
-    styles,
+    styles: {
+      ...dynamicStyles,
+      onThemeChange: (newTheme) => {
+        setTheme(newTheme);
+        setForceUpdate(prev => prev + 1);
+        AsyncStorage.setItem('theme', newTheme);
+      },
+      onFontSizeChange: (newFontSize) => {
+        console.log('Font size changed to:', newFontSize);
+        // Force immediate update
+        setFontSize(newFontSize);
+        // Apply font size directly to all text elements
+        setForceUpdate(prev => prev + 1);
+        
+        // Apply the font size change immediately to all text elements
+        const baseTextSize = newFontSize === 'Small' ? 14 : newFontSize === 'Large' ? 18 : 16;
+        
+        AsyncStorage.setItem('fontSize', newFontSize);
+      }
+    },
     NAV_HEIGHT,
     showMenu,
     setShowMenu,
@@ -188,7 +368,12 @@ export default function App() {
     setCurrentView,
     currentDay,
     setCurrentDay,
-    Days
+    Days,
+    // Add settings
+    theme,
+    setTheme,
+    fontSize,
+    setFontSize
   };
 
   // Render based on current view

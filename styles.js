@@ -2,7 +2,14 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  appContainer: { flex: 1, backgroundColor: '#fff' },
+  appContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  // Add a default text style that can be inherited
+  defaultText: {
+    fontSize: 16, // Base font size
+  },
 
   innerContainer: { flex: 1, padding: 22, marginTop:16},
   header: { flexDirection: 'row', justifyContent: 'space-between',  marginBottom: 12 },
