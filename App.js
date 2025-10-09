@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SafeAreaView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -17,6 +17,164 @@ import styles from './styles';
 // Constants
 const NAV_HEIGHT = 60;
 const STORAGE_KEY = 'TASKS';
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const DAYS = DAY_NAMES.map((fullName, id) => ({
+  id,
+  name: fullName.slice(0, 3),
+  fullName,
+}));
+
+const startOfDay = (value) => {
+  if (!value && value !== 0) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const addDays = (date, count) => {
+  const base = startOfDay(date) || new Date();
+  const result = new Date(base);
+  result.setDate(base.getDate() + count);
+  return result;
+};
+
+const toISODate = (value) => {
+  const date = startOfDay(value);
+  return date ? date.toISOString() : null;
+};
+
+const formatShortDate = (date) => {
+  const safeDate = startOfDay(date);
+  if (!safeDate) return '';
+  return safeDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const formatLongDay = (date) => {
+  const safeDate = startOfDay(date);
+  if (!safeDate) return '';
+  return safeDate.toLocaleDateString('en-US', { weekday: 'long' });
+};
+
+const describeRelativeDate = (date, reference = startOfDay(new Date())) => {
+  const safeDate = startOfDay(date);
+  const refDate = startOfDay(reference);
+  if (!safeDate || !refDate) return '';
+
+  const diffMs = safeDate.getTime() - refDate.getTime();
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays === -1) return 'Yesterday';
+
+  return formatShortDate(safeDate);
+};
+
+const getTaskDueDate = (task) => {
+  if (!task) return null;
+  if (task.dueDateISO) {
+    const parsed = startOfDay(task.dueDateISO);
+    if (parsed) return parsed;
+  }
+
+  if (task.dueDate) {
+    const parsed = startOfDay(task.dueDate);
+    if (parsed) return parsed;
+  }
+
+  return null;
+};
+
+const normalizeTask = (task) => {
+  if (!task) return task;
+
+  const normalized = {
+    wishlist: false,
+    ...task,
+  };
+
+  const dueDate = getTaskDueDate(normalized);
+  const createdDate = normalized.createdAt ? startOfDay(normalized.createdAt) : null;
+  const fallbackDate =
+    createdDate ||
+    (() => {
+      if (typeof normalized.currentDate === 'number') {
+        const base = startOfDay(new Date());
+        if (!base) return null;
+        const diff = normalized.currentDate - base.getDay();
+        const adjusted = new Date(base);
+        adjusted.setDate(base.getDate() + diff);
+        return adjusted;
+      }
+      return null;
+    })() ||
+    startOfDay(new Date());
+
+  if (dueDate) {
+    const iso = toISODate(dueDate);
+    normalized.dueDateISO = iso;
+    normalized.dueDayId = dueDate.getDay();
+    normalized.dueDayName = formatLongDay(dueDate);
+    normalized.dueDateLabel = normalized.dueDateLabel || describeRelativeDate(dueDate);
+    normalized.currentDate = normalized.dueDayId;
+    normalized.currentDay = normalized.dueDayName;
+  } else {
+    normalized.dueDateISO = null;
+    normalized.dueDateLabel = '';
+
+    normalized.dueDayId = fallbackDate.getDay();
+    normalized.dueDayName = formatLongDay(fallbackDate);
+    normalized.currentDate = normalized.dueDayId;
+    normalized.currentDay = normalized.dueDayName;
+  }
+
+  return normalized;
+};
+
+const countTasksByDay = (tasks = []) => tasks.reduce((acc, task) => {
+  const normalized = normalizeTask(task);
+  if (typeof normalized.dueDayId === 'number') {
+    acc[normalized.dueDayId] = (acc[normalized.dueDayId] || 0) + 1;
+  }
+  return acc;
+}, {});
+
+const DEFAULT_TASKS = (() => {
+  const today = startOfDay(new Date());
+  return [
+    {
+      id: '1',
+      title: 'Buy milk',
+      completed: false,
+      important: false,
+      wishlist: false,
+      dueDateISO: toISODate(today),
+      time: '10:00',
+    },
+    {
+      id: '2',
+      title: 'Fix bug',
+      completed: true,
+      important: true,
+      wishlist: false,
+      dueDateISO: toISODate(addDays(today, -1)),
+    },
+    {
+      id: '3',
+      title: 'Call mom',
+      completed: false,
+      important: true,
+      wishlist: false,
+      dueDateISO: toISODate(addDays(today, 2)),
+    },
+  ].map(normalizeTask);
+})();
 
 export default function App() {
   // App settings
@@ -25,22 +183,7 @@ export default function App() {
   
   // Force re-render when theme or font size changes
   const [forceUpdate, setForceUpdate] = useState(0);
-  
-  const Days = [
-    { id: 0, name: 'Sun' },
-    { id: 1, name: 'Mon' },
-    { id: 2, name: 'Tue' },
-    { id: 3, name: 'Wed' },
-    { id: 4, name: 'Thu' },
-    { id: 5, name: 'Fri' },
-    { id: 6, name: 'Sat' },
-  ];
-
-  // Fixed: Use getDay() instead of getDate() to get day of week (0-6)
-  const [currentDay, setCurrentDay] = useState(() => new Date().getDay());
-
-  console.log("currentDay", currentDay);
-
+  const [dayFilter, setDayFilter] = useState(() => String(new Date().getDay()));
   const [currentView, setCurrentView] = useState('today');
   const [showMenu, setShowMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -48,12 +191,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
   const [searchAllTodoListItem, setSearchAllTodoListItem] = useState('');
-  const [savedTodoTasks, setSavedTodoTasks] = useState([]);
-  const [tasks, setTasks] = useState([
-    { id: '1', title: 'Buy milk', completed: false, important: false, dueDate: 'Sep 18', time: '10:00' },
-    { id: '2', title: 'Fix bug', completed: true, important: true, dueDate: 'Sep 17' },
-    { id: '3', title: 'Call mom', completed: false, important: true },
-  ]);
+  const [selectedDueDateKey, setSelectedDueDateKey] = useState('none');
+  const [savedTodoTasks, setSavedTodoTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
+  const [tasks, setTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
+  const selectedDueDateLabel = useMemo(() => {
+    if (!selectedDueDateKey || selectedDueDateKey === 'none') return 'No due date';
+    const date = startOfDay(selectedDueDateKey);
+    if (!date) return 'No due date';
+    const relative = describeRelativeDate(date);
+    if (['Today', 'Tomorrow', 'Yesterday'].includes(relative)) {
+      return relative;
+    }
+    return formatShortDate(date);
+  }, [selectedDueDateKey]);
 
   // Load tasks and settings from AsyncStorage when app mounts
   useEffect(() => {
@@ -64,8 +214,9 @@ export default function App() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            setTasks(parsed);
-            setSavedTodoTasks(parsed);
+            const normalized = parsed.map(normalizeTask);
+            setTasks(normalized);
+            setSavedTodoTasks(normalized.map(task => ({ ...task })));
           } else {
             console.warn('Stored tasks is not an array, ignoring.');
           }
@@ -84,33 +235,29 @@ export default function App() {
     loadData();
   }, []);
 
-  console.log("day", new Date().toLocaleDateString('en-US', { weekday: 'long' }));
-
   // Add new task
   async function addTask() {
     try {
       const trimmed = (newTask || '').trim();
       if (!trimmed) return;
-      
-      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-      const taskItem = {
+      const dueDate = selectedDueDateKey === 'none' ? null : startOfDay(selectedDueDateKey);
+      const taskItem = normalizeTask({
         id: String(Date.now()),
         title: trimmed,
         completed: false,
         important: false,
         wishlist: false,
         priority: selectedPriority,
-        currentDate: new Date().getDay(),  
-        currentDay: days[new Date().getDay()]
-      };
-
+        createdAt: new Date().toISOString(),
+        dueDateISO: dueDate ? toISODate(dueDate) : null,
+        dueDateLabel: dueDate ? describeRelativeDate(dueDate) : '',
+      });
       setTasks(prev => {
         const newList = [taskItem, ...prev];
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => {
           console.error('Failed to save tasks to AsyncStorage', e);
         });
-        setSavedTodoTasks(newList);
+        setSavedTodoTasks(newList.map(task => ({ ...task })));
         return newList;
       });
 
@@ -125,7 +272,7 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList);
+      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
@@ -135,7 +282,7 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, wishlist: !t.wishlist } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList);
+      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
@@ -145,37 +292,51 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, important: !t.important } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList);
+      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
 
   // Filter tasks based on activeFilter and search
+  const dayCounts = useMemo(() => countTasksByDay(tasks), [tasks]);
+
   const filteredTasks = useMemo(() => {
     let list = [...tasks];
+    const today = startOfDay(new Date());
 
-    // Filter by type
     if (activeFilter === 'today') {
-      const todayStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric' });
-      list = list.filter(t => t.dueDate && t.dueDate.includes(todayStr));
+      list = list.filter(task => {
+        const dueDate = getTaskDueDate(task);
+        return dueDate ? describeRelativeDate(dueDate, today) === 'Today' : false;
+      });
     } else if (activeFilter === 'important') {
-      list = list.filter(t => t.important);
+      list = list.filter(task => task.important);
     } else if (activeFilter === 'planned') {
-      list = list.filter(t => !!t.dueDate);
-    }else {
-    // When 'all' filter is active, filter by currentDay
-    list = list.filter(t => t.currentDate === currentDay);
-  }
-  //  console.log(currentDay)
-   
-    // Filter by search query (TasksView search)
-    if (searchQuery && searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(t => t.title.toLowerCase().includes(q));
+      list = list.filter(task => !!getTaskDueDate(task));
     }
 
-    return list;
-  }, [tasks, activeFilter, searchQuery,currentDay]);
+    const shouldFilterByDay =
+      dayFilter !== 'all' &&
+      (activeFilter === 'all' || activeFilter === 'important' || activeFilter === 'planned');
+
+    if (shouldFilterByDay) {
+      const dayIndex = Number(dayFilter);
+      if (!Number.isNaN(dayIndex)) {
+        list = list.filter(task => {
+          if (typeof task.dueDayId === 'number') return task.dueDayId === dayIndex;
+          const dueDate = getTaskDueDate(task);
+          return dueDate ? dueDate.getDay() === dayIndex : false;
+        });
+      }
+    }
+
+    const query = (searchQuery || '').trim().toLowerCase();
+    if (query) {
+      list = list.filter(task => (task.title || '').toLowerCase().includes(query));
+    }
+
+    return list.map(normalizeTask);
+  }, [tasks, activeFilter, searchQuery, dayFilter]);
 
   // Get dynamic styles based on theme and font size
   const getAppStyles = () => {
@@ -366,9 +527,13 @@ export default function App() {
     setTasks,
     currentView,
     setCurrentView,
-    currentDay,
-    setCurrentDay,
-    Days,
+    dayFilter,
+    setDayFilter,
+    Days: DAYS,
+    selectedDueDateKey,
+    setSelectedDueDateKey,
+    selectedDueDateLabel,
+    dayCounts,
     // Add settings
     theme,
     setTheme,

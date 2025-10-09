@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, onToggleWishlist, styles, currentDay }) {
+export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, onToggleWishlist, styles }) {
 
   // const [updateTodoTaskTitle,setUpdateTodoTaskTitle] = React.useState("");
 
   const deleteTodoTask = (id) => {
-    console.log("Delete Task", id);
     setTasks(prevTasks => {
       const updatedTasks = prevTasks.filter(t => t.id !== id);
       return updatedTasks;
@@ -24,6 +23,29 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
   //     return newList;
   //   });
   // }
+
+  const detailText = useMemo(() => {
+    if (task.completed) return 'Completed';
+
+    const parts = [];
+    if (task.dueDateLabel) {
+      parts.push(task.dueDateLabel);
+    } else {
+      parts.push('No due date');
+    }
+    if (task.time) {
+      parts.push(task.time);
+    }
+    return parts.filter(Boolean).join(' · ');
+  }, [task.completed, task.dueDateLabel, task.time]);
+
+  const priorityValue = task.priority || 'None';
+  const priorityColor = useMemo(() => {
+    if (priorityValue === 'Urgent' || priorityValue === 'High') return { color: 'red' };
+    if (priorityValue === 'Medium') return { color: 'orange' };
+    if (priorityValue === 'Low') return { color: 'green' };
+    return { color: '#6b7280' };
+  }, [priorityValue]);
 
   return (
     <View style={styles.taskCard}>
@@ -48,10 +70,7 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
         </View>
 
         <Text style={styles.taskDetails}>
-          {task.completed ? '(Completed)' : `${task.dueDate || ''}${task.time ? ` · ${task.time}` : ''}`}
-          {task.currentDay}
-          {/* {currentDay} */}
-          {/* {task.currentDay === currentDay ? currentDay : ''} */}
+          {detailText}
         </Text>
 
 {/*         
@@ -63,14 +82,10 @@ export default function TaskCard({ task, setTasks, onToggle, onToggleImportant, 
         <Text
         style={[
           styles.priorityTaskText,
-          task.priority === 'High'
-          ? { color: 'red' }
-          : task.priority === 'Medium'
-          ? { color: 'orange' }
-          : { color: 'green' },
+          priorityColor,
   ]}
 >
-  {task.priority}
+  {priorityValue}
   </Text>
 
       </View>

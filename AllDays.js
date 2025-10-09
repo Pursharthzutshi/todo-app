@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, ScrollView, Text, View } from 'react-native';
 
-export default function AllDays({ Days, currentDay, setCurrentDay }) {
+export default function AllDays({ Days, dayFilter, setDayFilter, dayCounts = {} }) {
+  const displayDays = useMemo(
+    () => [{ id: 'all', name: 'All', fullName: 'All Days' }, ...Days],
+    [Days]
+  );
+
+  const totalCount = useMemo(
+    () => Object.values(dayCounts).reduce((acc, value) => acc + value, 0),
+    [dayCounts]
+  );
+
   return (
     <View style={{ paddingVertical: 8 }}>
       <ScrollView
@@ -9,33 +19,62 @@ export default function AllDays({ Days, currentDay, setCurrentDay }) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 12 }}
       >
-        {Days.map(day => {
-          console.log("day", day);
-          console.log("currentDay", currentDay);
-          
-          const isActive = currentDay === day.id;
+        {displayDays.map(day => {
+          const isAll = day.id === 'all';
+          const isActive = isAll ? dayFilter === 'all' : String(dayFilter) === String(day.id);
+          const count = isAll ? totalCount : dayCounts[day.id] || 0;
 
           return (
             <TouchableOpacity
-              key={day.id}  // Fixed: Use unique day.id as key
-              onPress={() => setCurrentDay(day.id)}  // Fixed: Pass day.id instead of day object
+              key={day.id}
+              onPress={() => {
+                if (isAll) {
+                  setDayFilter('all');
+                  return;
+                }
+                setDayFilter(isActive ? 'all' : String(day.id));
+              }}
               style={{
-                paddingVertical: 8,
-                paddingHorizontal: 9,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
                 borderRadius: 16,
-                marginLeft: -12,
-                marginRight: 17,
+                marginRight: 12,
                 borderWidth: 1,
                 borderColor: isActive ? '#4F46E5' : '#e5e7eb',
-                backgroundColor: isActive ? '#EEF2FF' : 'white',
+                backgroundColor: isActive ? '#EEF2FF' : '#ffffff',
               }}
             >
-              <Text style={{ 
-                fontWeight: isActive ? '700' : '500', 
-                color: isActive ? '#3730A3' : '#111827' 
-              }}>
-                {day.name}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={{
+                    fontWeight: isActive ? '700' : '500',
+                    color: isActive ? '#3730A3' : '#111827',
+                  }}
+                >
+                  {day.name}
+                </Text>
+                <View
+                  style={{
+                    marginLeft: 8,
+                    minWidth: 24,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 9999,
+                    backgroundColor: isActive ? '#4F46E5' : '#e5e7eb',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: isActive ? '#ffffff' : '#1f2937',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              </View>
             </TouchableOpacity>
           );
         })}
