@@ -100,9 +100,10 @@ const generateCalendar = (referenceDate) => {
       0,
     ).getDate();
     for (let i = startWeekDay - 1; i >= 0; i -= 1) {
+      const label = prevMonthLastDay - i;
       days.push({
-        key: `prev-${i}`,
-        label: String(prevMonthLastDay - i),
+        key: `prev-${monthStart.getMonth()}-${monthStart.getFullYear()}-${label}`,
+        label: String(label),
         date: null,
         type: 'padding',
       });
@@ -117,7 +118,7 @@ const generateCalendar = (referenceDate) => {
       day,
     );
     days.push({
-      key: `current-${day}`,
+      key: `current-${monthStart.getMonth()}-${monthStart.getFullYear()}-${day}`,
       label: String(day),
       date: currentDate,
       type: 'current',
@@ -127,9 +128,10 @@ const generateCalendar = (referenceDate) => {
   // trailing padding to fill weeks
   while (days.length % 7 !== 0) {
     const nextIndex = days.length % 7;
+    const label = nextIndex + 1;
     days.push({
-      key: `next-${nextIndex}`,
-      label: String(nextIndex + 1),
+      key: `next-${monthStart.getMonth()}-${monthStart.getFullYear()}-${label}`,
+      label: String(label),
       date: null,
       type: 'padding',
     });
@@ -157,6 +159,8 @@ export default function CalendarModal({
   const sheetScale = useRef(new Animated.Value(0.95)).current;
   const sheetOpacity = useRef(new Animated.Value(0)).current;
   const monthAnim = useRef(new Animated.Value(0)).current;
+  const monthFade = useRef(new Animated.Value(1)).current;
+  const dayScaleRef = useRef({});
 
   useEffect(() => {
     setActiveMonth(initialMonth);
@@ -199,6 +203,7 @@ export default function CalendarModal({
 
   const animateMonthChange = (direction, newDate) => {
     monthAnim.setValue(direction * 32);
+    monthFade.setValue(0.6);
     setActiveMonth(newDate);
     Animated.timing(monthAnim, {
       toValue: 0,
@@ -206,6 +211,19 @@ export default function CalendarModal({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
+    Animated.timing(monthFade, {
+      toValue: 1,
+      duration: 210,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const getDayScale = (key) => {
+    if (!dayScaleRef.current[key]) {
+      dayScaleRef.current[key] = new Animated.Value(1);
+    }
+    return dayScaleRef.current[key];
   };
 
   const goToPreviousMonth = () => {
@@ -244,7 +262,7 @@ export default function CalendarModal({
           ]}
         >
           <View style={styles.headerRow}>
-            <View>
+            <View style={styles.headerTextWrap}>
               <Text
                 style={[
                   styles.headerTitle,
@@ -278,6 +296,7 @@ export default function CalendarModal({
               styles.monthContainer,
               {
                 transform: [{ translateX: monthAnim }],
+                opacity: monthFade,
               },
             ]}
           >
@@ -312,23 +331,39 @@ export default function CalendarModal({
                 const iso = day.date ? formatISO(day.date) : null;
                 const isSelected = iso && selectedISO === iso;
                 const isToday = iso === todayISO;
+                const dayKey = `${day.key}-${index}`;
+                const dayScale = getDayScale(dayKey);
 
                 return (
                   <TouchableOpacity
-                    key={`${day.key}-${index}`}
+                    key={dayKey}
                     style={[
                       styles.dayCell,
                       isSelected && {
                         backgroundColor: palette.daySelectedBackground,
                       },
-                    isToday && !isSelected && {
-                      borderWidth: 1,
-                      borderColor: palette.dayTodayBorder,
-                    },
-                  ]}
-                  disabled={!day.date}
+                      isToday && !isSelected && {
+                        borderWidth: 1,
+                        borderColor: palette.dayTodayBorder,
+                      },
+                    ]}
+                    disabled={!day.date}
                     onPress={() => {
                       if (day.date && onSelect) {
+                        Animated.sequence([
+                          Animated.timing(dayScale, {
+                            toValue: 0.85,
+                            duration: 80,
+                            easing: Easing.out(Easing.quad),
+                            useNativeDriver: true,
+                          }),
+                          Animated.spring(dayScale, {
+                            toValue: 1,
+                            bounciness: 12,
+                            speed: 18,
+                            useNativeDriver: true,
+                          }),
+                        ]).start();
                         onSelect(formatISO(day.date));
                       }
                     }}
@@ -346,6 +381,7 @@ export default function CalendarModal({
                           color: palette.daySelectedText,
                           fontWeight: '700',
                         },
+                        { transform: [{ scale: dayScale }] },
                       ]}
                     >
                       {day.label}
@@ -445,9 +481,13 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  headerTextWrap: {
+    flex: 1,
+    paddingRight: 12,
   },
   headerTitle: {
     fontSize: 18,
