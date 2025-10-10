@@ -152,58 +152,65 @@ export default function HomePage({
         content: {
           paddingHorizontal: 20,
           paddingBottom: NAV_HEIGHT + 20,
-          paddingTop: 26,
-          gap: 22,
+          paddingTop: 20,
+          gap: 18,
         },
         headerCard: {
-          padding: 24,
-          borderRadius: 28,
+          paddingVertical: 18,
+          paddingHorizontal: 20,
+          borderRadius: 24,
           backgroundColor: palette.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: palette.cardBorder,
           shadowColor: palette.cardShadow,
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: theme === 'Dark' ? 0.28 : 0.14,
-          shadowRadius: 24,
-          elevation: 8,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: theme === 'Dark' ? 0.22 : 0.12,
+          shadowRadius: 20,
+          elevation: 7,
         },
-        headerTop: {
+        headerRow: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
         },
+        headerTextGroup: {
+          flex: 1,
+          paddingRight: 12,
+        },
         headerGreeting: {
-          fontSize: scaleFont(18, fontScale),
+          fontSize: scaleFont(13, fontScale),
           color: palette.textSecondary,
           fontWeight: '600',
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
         },
         headerTitle: {
-          marginTop: 6,
-          fontSize: scaleFont(28, fontScale),
+          marginTop: 2,
+          fontSize: scaleFont(24, fontScale),
           fontWeight: '700',
           color: palette.textPrimary,
         },
         headerSubtitle: {
-          marginTop: 8,
-          fontSize: scaleFont(13, fontScale),
+          marginTop: 4,
+          fontSize: scaleFont(12, fontScale),
           color: palette.textSecondary,
-          lineHeight: scaleFont(20, fontScale),
+          lineHeight: scaleFont(18, fontScale),
         },
-        headerBadgeRow: {
-          marginTop: 18,
+        headerMetricsRow: {
+          marginTop: 12,
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: 10,
         },
-        headerBadge: {
+        headerMetric: {
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: palette.pillBackground,
           paddingVertical: 6,
-          paddingHorizontal: 12,
-          borderRadius: 999,
+          paddingHorizontal: 10,
+          borderRadius: 14,
         },
-        headerBadgeText: {
+        headerMetricText: {
           marginLeft: 6,
           color: palette.pillText,
           fontSize: scaleFont(12, fontScale),
@@ -211,18 +218,22 @@ export default function HomePage({
         },
         filterGroup: {
           flexDirection: 'row',
-          flexWrap: 'wrap',
-          marginHorizontal: -6,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: palette.filterBackground,
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          padding: 6,
+          marginTop: 12,
         },
         filterChip: {
+          flex: 1,
           paddingVertical: 10,
-          paddingHorizontal: 16,
-          borderRadius: 18,
-          borderWidth: 1,
-          marginHorizontal: 6,
-          marginBottom: 12,
-          backgroundColor: palette.filterBackground,
-          borderColor: palette.filterBorder,
+          borderRadius: 16,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginHorizontal: 4,
         },
         filterChipActive: {
           backgroundColor: palette.filterActive,
@@ -263,6 +274,14 @@ export default function HomePage({
           fontSize: scaleFont(13, fontScale),
           color: palette.textSecondary,
           marginTop: 4,
+        },
+        todoListHeading: {
+          marginTop: 18,
+          color: palette.textPrimary,
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '700',
+          letterSpacing: 0.6,
+          textTransform: 'uppercase',
         },
         addTaskInput: {
           backgroundColor: palette.inputBackground,
@@ -315,26 +334,7 @@ export default function HomePage({
           fontWeight: '700',
         },
         statsRow: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: 12,
-        },
-        statCard: {
-          flexBasis: '31%',
-          backgroundColor: palette.pillBackground,
-          borderRadius: 18,
-          paddingVertical: 16,
-          paddingHorizontal: 14,
-        },
-        statValue: {
-          fontSize: scaleFont(20, fontScale),
-          fontWeight: '700',
-          color: palette.textPrimary,
-        },
-        statLabel: {
-          marginTop: 6,
-          fontSize: scaleFont(12, fontScale),
-          color: palette.textSecondary,
+          marginTop: 0,
         },
         searchInput: {
           marginTop: 12,
@@ -348,7 +348,8 @@ export default function HomePage({
           fontSize: scaleFont(14, fontScale),
         },
         taskList: {
-          marginTop: 16,
+          marginTop: 12,
+          gap: 12,
         },
         emptyState: {
           marginTop: 20,
@@ -421,22 +422,21 @@ export default function HomePage({
       showsVerticalScrollIndicator={false}
     >
       <View style={homeStyles.headerCard}>
-        <View style={homeStyles.headerTop}>
-          <View>
+        <View style={homeStyles.headerRow}>
+          <View style={homeStyles.headerTextGroup}>
             <Text style={homeStyles.headerGreeting}>{getGreeting()}</Text>
             <Text style={homeStyles.headerTitle}>{pageTitle}</Text>
+            <Text style={homeStyles.headerSubtitle}>{headerSubtitle}</Text>
           </View>
           <TouchableOpacity
-            style={[
-              {
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: palette.accentSoft,
-              },
-            ]}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: palette.accentSoft,
+            }}
             onPress={() => setShowMenu(!showMenu)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -444,92 +444,18 @@ export default function HomePage({
           </TouchableOpacity>
         </View>
 
-        <Text style={homeStyles.headerSubtitle}>{headerSubtitle}</Text>
-
-        <View style={homeStyles.headerBadgeRow}>
-          <View style={homeStyles.headerBadge}>
+        <View style={homeStyles.headerMetricsRow}>
+          <View style={homeStyles.headerMetric}>
             <MaterialIcons name="check-circle" size={16} color={palette.accent} />
-            <Text style={homeStyles.headerBadgeText}>
-              {completedTasks} done
-            </Text>
+            <Text style={homeStyles.headerMetricText}>{completedTasks} done</Text>
           </View>
-          <View style={homeStyles.headerBadge}>
+          <View style={homeStyles.headerMetric}>
             <MaterialIcons name="event" size={16} color={palette.accent} />
-            <Text style={homeStyles.headerBadgeText}>
-              {todayTasks} due today
-            </Text>
+            <Text style={homeStyles.headerMetricText}>{todayTasks} due today</Text>
           </View>
-          <View style={homeStyles.headerBadge}>
+          <View style={homeStyles.headerMetric}>
             <MaterialIcons name="star" size={16} color={palette.accent} />
-            <Text style={homeStyles.headerBadgeText}>
-              {importantTasks} important
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={homeStyles.sectionCard}>
-        <View style={homeStyles.sectionTitleRow}>
-          <View>
-            <Text style={homeStyles.sectionTitle}>Quick filters</Text>
-            <Text style={homeStyles.sectionSubtitle}>
-              Jump to the list that needs your focus.
-            </Text>
-          </View>
-        </View>
-
-        <View style={homeStyles.filterGroup}>
-          {['All', 'Today', 'Important', 'Planned'].map((filter) => {
-            const isActive =
-              activeFilter.toLowerCase() === filter.toLowerCase();
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  homeStyles.filterChip,
-                  isActive && homeStyles.filterChipActive,
-                ]}
-                onPress={() => setActiveFilter(filter.toLowerCase())}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text
-                  style={[
-                    homeStyles.filterChipText,
-                    isActive && homeStyles.filterChipTextActive,
-                  ]}
-                >
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <AllDays
-          Days={Days}
-          dayFilter={dayFilter}
-          setDayFilter={setDayFilter}
-          dayCounts={dayCounts}
-          theme={theme}
-          fontScale={fontScale}
-        />
-
-        <View style={homeStyles.statsRow}>
-          <View style={homeStyles.statCard}>
-            <Text style={homeStyles.statValue}>{totalTasks}</Text>
-            <Text style={homeStyles.statLabel}>Total tasks</Text>
-          </View>
-          <View style={homeStyles.statCard}>
-            <Text style={[homeStyles.statValue, { color: palette.metricSuccess }]}>
-              {completedTasks}
-            </Text>
-            <Text style={homeStyles.statLabel}>Completed</Text>
-          </View>
-          <View style={homeStyles.statCard}>
-            <Text style={[homeStyles.statValue, { color: palette.metricNeutral }]}>
-              {plannedTasks}
-            </Text>
-            <Text style={homeStyles.statLabel}>Scheduled</Text>
+            <Text style={homeStyles.headerMetricText}>{importantTasks} important</Text>
           </View>
         </View>
       </View>
@@ -595,13 +521,50 @@ export default function HomePage({
       <View style={homeStyles.sectionCard}>
         <View style={homeStyles.sectionTitleRow}>
           <View>
-            <Text style={homeStyles.sectionTitle}>Your tasks</Text>
+            <Text style={homeStyles.sectionTitle}>Quick filters</Text>
             <Text style={homeStyles.sectionSubtitle}>
-              Search or scroll through today&apos;s plan.
+              Jump to the list that needs your focus.
             </Text>
           </View>
         </View>
 
+        <View style={homeStyles.filterGroup}>
+          {['All', 'Today', 'Important', 'Planned'].map((filter) => {
+            const isActive =
+              activeFilter.toLowerCase() === filter.toLowerCase();
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  homeStyles.filterChip,
+                  isActive && homeStyles.filterChipActive,
+                ]}
+                onPress={() => setActiveFilter(filter.toLowerCase())}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text
+                  style={[
+                    homeStyles.filterChipText,
+                    isActive && homeStyles.filterChipTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <AllDays
+          Days={Days}
+          dayFilter={dayFilter}
+          setDayFilter={setDayFilter}
+          dayCounts={dayCounts}
+          theme={theme}
+          fontScale={fontScale}
+        />
+
+        <Text style={homeStyles.todoListHeading}>Todo list</Text>
         <TextInput
           style={homeStyles.searchInput}
           placeholder="Search your tasks"
@@ -638,6 +601,7 @@ export default function HomePage({
         onClose={() => setCalendarVisible(false)}
         onSelect={(value) => setSelectedDueDateKey(value)}
         selectedDateISO={selectedDueDateKey === 'none' ? null : selectedDueDateKey}
+        theme={theme}
       />
     </ScrollView>
   );

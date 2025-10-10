@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -6,159 +6,414 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   StyleSheet,
+  Animated,
+  Easing,
 } from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
-const startOfMonth = (value) => {
-  const date = new Date(value);
-  date.setDate(1);
-  date.setHours(0, 0, 0, 0);
-  return date;
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+const THEME = {
+  Light: {
+    backdrop: 'rgba(15, 23, 42, 0.28)',
+    sheet: '#FFFFFF',
+    headerText: '#0F172A',
+    subtitle: '#475467',
+    divider: '#E2E8F0',
+    dayText: '#1F2937',
+    dayMuted: '#94A3B8',
+    daySelectedBackground: '#6366F1',
+    daySelectedText: '#FFFFFF',
+    dayTodayBorder: '#6366F1',
+    footerBackground: '#EEF2FF',
+    footerText: '#4338CA',
+    buttonPrimary: '#6366F1',
+    buttonPrimaryText: '#F8FAFF',
+    buttonSecondary: '#EEF2FF',
+    buttonSecondaryText: '#4338CA',
+  },
+  Dark: {
+    backdrop: 'rgba(2, 6, 23, 0.6)',
+    sheet: '#111C2E',
+    headerText: '#E2E8F0',
+    subtitle: '#94A3B8',
+    divider: 'rgba(148,163,184,0.2)',
+    dayText: '#CBD5F5',
+    dayMuted: '#64748B',
+    daySelectedBackground: '#818CF8',
+    daySelectedText: '#0B1120',
+    dayTodayBorder: '#A5B4FC',
+    footerBackground: 'rgba(129,140,248,0.2)',
+    footerText: '#E0E7FF',
+    buttonPrimary: '#818CF8',
+    buttonPrimaryText: '#0B1120',
+    buttonSecondary: 'rgba(129,140,248,0.16)',
+    buttonSecondaryText: '#E0E7FF',
+  },
 };
 
 const startOfDay = (value) => {
-  const date = new Date(value);
+  if (!value && value !== 0) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
   date.setHours(0, 0, 0, 0);
   return date;
 };
 
-const toISODate = (value) => startOfDay(value).toISOString();
-
-const getCalendarMatrix = (monthCursor) => {
-  const firstOfMonth = startOfMonth(monthCursor);
-  const firstVisible = new Date(firstOfMonth);
-  firstVisible.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
-
-  const days = [];
-  for (let index = 0; index < 42; index += 1) {
-    const day = new Date(firstVisible);
-    day.setDate(firstVisible.getDate() + index);
-    day.setHours(0, 0, 0, 0);
-    days.push(day);
-  }
-  return days;
+const formatISO = (date) => {
+  if (!(date instanceof Date)) return null;
+  return date.toISOString().split('T')[0];
 };
 
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const generateCalendar = (referenceDate) => {
+  const monthStart = startOfDay(referenceDate);
+  monthStart.setDate(1);
+
+  const startWeekDay = monthStart.getDay();
+  const totalDays = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    0,
+  ).getDate();
+
+  const days = [];
+  // previous month padding
+  if (startWeekDay > 0) {
+    const prevMonthLastDay = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth(),
+      0,
+    ).getDate();
+    for (let i = startWeekDay - 1; i >= 0; i -= 1) {
+      days.push({
+        key: `prev-${i}`,
+        label: String(prevMonthLastDay - i),
+        date: null,
+        type: 'padding',
+      });
+    }
+  }
+
+  // current month days
+  for (let day = 1; day <= totalDays; day += 1) {
+    const currentDate = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth(),
+      day,
+    );
+    days.push({
+      key: `current-${day}`,
+      label: String(day),
+      date: currentDate,
+      type: 'current',
+    });
+  }
+
+  // trailing padding to fill weeks
+  while (days.length % 7 !== 0) {
+    const nextIndex = days.length % 7;
+    days.push({
+      key: `next-${nextIndex}`,
+      label: String(nextIndex + 1),
+      date: null,
+      type: 'padding',
+    });
+  }
+
+  return days;
+};
 
 export default function CalendarModal({
   visible,
   onClose,
   onSelect,
-  selectedDateISO = null,
+  selectedDateISO,
+  theme = 'Light',
 }) {
+  const palette = THEME[theme] || THEME.Light;
+  const todayISO = formatISO(startOfDay(new Date()));
+
   const initialMonth = useMemo(() => {
-    if (selectedDateISO) return startOfMonth(selectedDateISO);
-    return startOfMonth(new Date());
+    const base = selectedDateISO ? startOfDay(selectedDateISO) : startOfDay(new Date());
+    return base || startOfDay(new Date());
   }, [selectedDateISO]);
 
-  const [monthCursor, setMonthCursor] = useState(initialMonth);
+  const [activeMonth, setActiveMonth] = useState(initialMonth);
+  const sheetScale = useRef(new Animated.Value(0.95)).current;
+  const sheetOpacity = useRef(new Animated.Value(0)).current;
+  const monthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setMonthCursor(initialMonth);
+    setActiveMonth(initialMonth);
   }, [initialMonth]);
 
-  const matrix = useMemo(() => getCalendarMatrix(monthCursor), [monthCursor]);
+  const { currentMonthLabel, calendarDays, selectedISO } = useMemo(() => {
+    const monthLabel = `${MONTH_NAMES[activeMonth.getMonth()]} ${activeMonth.getFullYear()}`;
+    const grid = generateCalendar(activeMonth);
+    return {
+      currentMonthLabel: monthLabel,
+      calendarDays: grid,
+      selectedISO: selectedDateISO || null,
+    };
+  }, [activeMonth, selectedDateISO]);
 
-  const handleSelect = (date) => {
-    if (onSelect) {
-      onSelect(toISODate(date));
+  useEffect(() => {
+    if (visible) {
+      sheetScale.setValue(0.95);
+      sheetOpacity.setValue(0);
+      Animated.parallel([
+        Animated.spring(sheetScale, {
+          toValue: 1,
+          damping: 14,
+          stiffness: 180,
+          mass: 0.9,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetOpacity, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      sheetOpacity.setValue(0);
+      sheetScale.setValue(0.95);
     }
-    if (onClose) onClose();
+  }, [visible, sheetScale, sheetOpacity]);
+
+  const animateMonthChange = (direction, newDate) => {
+    monthAnim.setValue(direction * 32);
+    setActiveMonth(newDate);
+    Animated.timing(monthAnim, {
+      toValue: 0,
+      duration: 210,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
   };
 
-  const handleClear = () => {
-    if (onSelect) {
-      onSelect('none');
-    }
-    if (onClose) onClose();
+  const goToPreviousMonth = () => {
+    const prev = new Date(activeMonth);
+    prev.setMonth(prev.getMonth() - 1);
+    animateMonthChange(1, prev);
   };
 
-  const selectedDate = selectedDateISO ? startOfDay(selectedDateISO) : null;
+  const goToNextMonth = () => {
+    const next = new Date(activeMonth);
+    next.setMonth(next.getMonth() + 1);
+    animateMonthChange(-1, next);
+  };
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      onRequestClose={onClose}
+    >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop} />
+        <View style={[styles.backdrop, { backgroundColor: palette.backdrop }]} />
       </TouchableWithoutFeedback>
 
-      <View style={styles.container}>
-        <View style={styles.calendar}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => {
-                const prev = new Date(monthCursor);
-                prev.setMonth(monthCursor.getMonth() - 1);
-                setMonthCursor(startOfMonth(prev));
-              }}
-              style={styles.navButton}
-            >
-              <Text style={styles.navLabel}>{'‹'}</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerLabel}>
-              {monthCursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                const next = new Date(monthCursor);
-                next.setMonth(monthCursor.getMonth() + 1);
-                setMonthCursor(startOfMonth(next));
-              }}
-              style={styles.navButton}
-            >
-              <Text style={styles.navLabel}>{'›'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.weekRow}>
-            {WEEKDAY_LABELS.map(label => (
-              <Text key={label} style={styles.weekdayLabel}>
-                {label}
+      <View style={styles.centerWrapper}>
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: palette.sheet,
+              borderColor: palette.divider,
+              transform: [{ scale: sheetScale }],
+              opacity: sheetOpacity,
+            },
+          ]}
+        >
+          <View style={styles.headerRow}>
+            <View>
+              <Text
+                style={[
+                  styles.headerTitle,
+                  { color: palette.headerText },
+                ]}
+              >
+                Pick a due date
               </Text>
-            ))}
+              <Text
+                style={[
+                  styles.headerSubtitle,
+                  { color: palette.subtitle },
+                ]}
+              >
+                Stay on track by anchoring this task on your schedule.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[
+                styles.closeButton,
+                { borderColor: palette.divider },
+              ]}
+            >
+              <MaterialIcons name="close" size={18} color={palette.subtitle} />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.daysGrid}>
-            {matrix.map(day => {
-              const isCurrentMonth = day.getMonth() === monthCursor.getMonth();
-              const isToday =
-                day.toDateString() === new Date().toDateString();
-              const isSelected =
-                selectedDate && day.getTime() === selectedDate.getTime();
+          <Animated.View
+            style={[
+              styles.monthContainer,
+              {
+                transform: [{ translateX: monthAnim }],
+              },
+            ]}
+          >
+            <View style={styles.monthRow}>
+              <TouchableOpacity style={styles.monthNav} onPress={goToPreviousMonth}>
+                <MaterialIcons name="keyboard-arrow-left" size={20} color={palette.subtitle} />
+              </TouchableOpacity>
+              <Text style={[styles.monthLabel, { color: palette.headerText }]}>
+                {currentMonthLabel}
+              </Text>
+              <TouchableOpacity style={styles.monthNav} onPress={goToNextMonth}>
+                <MaterialIcons name="keyboard-arrow-right" size={20} color={palette.subtitle} />
+              </TouchableOpacity>
+            </View>
 
-              return (
-                <TouchableOpacity
-                  key={day.toISOString()}
-                  onPress={() => handleSelect(day)}
+            <View style={styles.dayHeaderRow}>
+              {DAY_LABELS.map((label, index) => (
+                <Text
+                  key={`${label}-${index}`}
                   style={[
-                    styles.dayCell,
-                    !isCurrentMonth && styles.dayCellOutside,
-                    isSelected && styles.dayCellSelected,
-                    isToday && styles.dayCellToday,
+                    styles.dayHeaderText,
+                    { color: palette.subtitle },
                   ]}
                 >
-                  <Text
+                  {label}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.dayGrid}>
+              {calendarDays.map((day, index) => {
+                const iso = day.date ? formatISO(day.date) : null;
+                const isSelected = iso && selectedISO === iso;
+                const isToday = iso === todayISO;
+
+                return (
+                  <TouchableOpacity
+                    key={`${day.key}-${index}`}
                     style={[
-                      styles.dayLabel,
-                      !isCurrentMonth && styles.dayLabelOutside,
-                      isSelected && styles.dayLabelSelected,
-                    ]}
+                      styles.dayCell,
+                      isSelected && {
+                        backgroundColor: palette.daySelectedBackground,
+                      },
+                    isToday && !isSelected && {
+                      borderWidth: 1,
+                      borderColor: palette.dayTodayBorder,
+                    },
+                  ]}
+                  disabled={!day.date}
+                    onPress={() => {
+                      if (day.date && onSelect) {
+                        onSelect(formatISO(day.date));
+                      }
+                    }}
                   >
-                    {day.getDate()}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+                    <Animated.Text
+                      style={[
+                        styles.dayLabel,
+                        {
+                          color:
+                            day.type !== 'current'
+                              ? palette.dayMuted
+                              : palette.dayText,
+                        },
+                        isSelected && {
+                          color: palette.daySelectedText,
+                          fontWeight: '700',
+                        },
+                      ]}
+                    >
+                      {day.label}
+                    </Animated.Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Animated.View>
+
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor: palette.footerBackground,
+              },
+            ]}
+          >
+            <MaterialIcons name="tips-and-updates" size={18} color={palette.footerText} />
+            <Text
+              style={[
+                styles.footerText,
+                { color: palette.footerText },
+              ]}
+            >
+              Try locking tasks to the start of your day—you’ll know exactly
+              where to begin.
+            </Text>
           </View>
 
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-              <Text style={styles.clearLabel}>Clear</Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                { backgroundColor: palette.buttonSecondary },
+              ]}
+              onPress={() => {
+                if (onSelect) onSelect(null);
+              }}
+            >
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: palette.buttonSecondaryText },
+                ]}
+              >
+                Clear date
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeLabel}>Done</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: palette.buttonPrimary },
+              ]}
+              onPress={onClose}
+            >
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  { color: palette.buttonPrimaryText },
+                ]}
+              >
+                Done
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -167,116 +422,136 @@ export default function CalendarModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  container: {
+  centerWrapper: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
-  calendar: {
+  sheet: {
     width: '100%',
     maxWidth: 360,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    borderRadius: 28,
+    padding: 18,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  header: {
+  monthContainer: {
+    marginTop: 4,
+  },
+  headerRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 12,
   },
-  headerLabel: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  navButton: {
-    padding: 8,
-    borderRadius: 999,
-  },
-  navLabel: {
-    fontSize: 20,
-    color: '#2563eb',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  weekdayLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 4,
-    borderRadius: 999,
-  },
-  dayCellOutside: {
-    opacity: 0.35,
-  },
-  dayCellSelected: {
-    backgroundColor: '#4F46E5',
-  },
-  dayCellToday: {
-    borderWidth: 1,
-    borderColor: '#4F46E5',
-  },
-  dayLabel: {
-    fontSize: 15,
-    color: '#111827',
-    fontWeight: '500',
-  },
-  dayLabelOutside: {
-    color: '#6b7280',
-  },
-  dayLabelSelected: {
-    color: '#ffffff',
     fontWeight: '700',
   },
-  actions: {
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  clearButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  clearLabel: {
-    color: '#ef4444',
-    fontWeight: '600',
+  headerSubtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
   },
   closeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#111827',
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  closeLabel: {
-    color: '#ffffff',
+  monthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 8,
+  },
+  monthLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  monthNav: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  dayHeaderText: {
+    width: '14.285%',
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  dayCell: {
+    width: '14.285%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    alignSelf: 'center',
+  },
+  dayLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  footer: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  footerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 12,
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    fontWeight: '600',
+  },
+  primaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
     fontWeight: '600',
   },
 });
