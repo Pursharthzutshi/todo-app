@@ -1,379 +1,630 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, TextInput, Linking, Alert } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Linking,
+  Alert,
+} from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LIGHT_PALETTE = {
+  background: '#F5F7FB',
+  card: '#FFFFFF',
+  elevated: '#F9FAFF',
+  border: 'rgba(99,102,241,0.16)',
+  subtleBorder: 'rgba(15,23,42,0.06)',
+  textPrimary: '#0F172A',
+  textSecondary: '#475467',
+  accent: '#6366F1',
+  accentSoft: 'rgba(99,102,241,0.12)',
+  badgeSurface: '#EEF2FF',
+  pillText: '#64748B',
+  pillTextActive: '#312E81',
+  inputBackground: '#FFFFFF',
+  inputBorder: 'rgba(148,163,184,0.32)',
+  buttonBackground: '#6366F1',
+  buttonText: '#F8FAFF',
+  placeholder: '#94A3B8',
+  secondaryButton: '#EEF2FF',
+  secondaryButtonText: '#4338CA',
+};
+
+const DARK_PALETTE = {
+  background: '#0B1120',
+  card: '#111C2E',
+  elevated: '#15213A',
+  border: 'rgba(129,140,248,0.24)',
+  subtleBorder: 'rgba(15,23,42,0.35)',
+  textPrimary: '#F8FAFF',
+  textSecondary: '#CBD5F5',
+  accent: '#818CF8',
+  accentSoft: 'rgba(99,102,241,0.22)',
+  badgeSurface: 'rgba(129,140,248,0.16)',
+  pillText: '#94A3B8',
+  pillTextActive: '#E0E7FF',
+  inputBackground: '#101A2B',
+  inputBorder: 'rgba(129,140,248,0.35)',
+  buttonBackground: '#6366F1',
+  buttonText: '#F8FAFF',
+  placeholder: '#7486A8',
+  secondaryButton: 'rgba(129,140,248,0.16)',
+  secondaryButtonText: '#E0E7FF',
+};
+
+const themeChoices = [
+  {
+    value: 'Light',
+    title: 'Light',
+    caption: 'Bright & airy',
+    icon: 'wb-sunny',
+  },
+  {
+    value: 'Dark',
+    title: 'Dark',
+    caption: 'Calm & focused',
+    icon: 'nightlight-round',
+  },
+];
+
+const fontChoices = [
+  {
+    value: 'Small',
+    title: 'Small',
+    caption: 'Compact detail',
+    icon: 'text-fields',
+  },
+  {
+    value: 'Medium',
+    title: 'Medium',
+    caption: 'Balanced comfort',
+    icon: 'text-format',
+  },
+  {
+    value: 'Large',
+    title: 'Large',
+    caption: 'Bold & easy',
+    icon: 'format-size',
+  },
+];
+
+const createThemedStyles = (palette) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: palette.background,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: 36,
+      paddingTop: 26,
+    },
+    headerCard: {
+      backgroundColor: palette.card,
+      borderRadius: 28,
+      padding: 24,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: palette.subtleBorder,
+      shadowColor: 'rgba(15,23,42,0.25)',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.12,
+      shadowRadius: 22,
+      elevation: 8,
+    },
+    headerIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: palette.accentSoft,
+      marginBottom: 16,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: palette.textPrimary,
+    },
+    headerSubtitle: {
+      marginTop: 8,
+      color: palette.textSecondary,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    headerBadge: {
+      alignSelf: 'flex-start',
+      marginTop: 18,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: palette.badgeSurface,
+    },
+    headerBadgeText: {
+      color: palette.accent,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.4,
+    },
+    sectionCard: {
+      backgroundColor: palette.card,
+      borderRadius: 24,
+      padding: 20,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: palette.subtleBorder,
+      shadowColor: 'rgba(15,23,42,0.16)',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.1,
+      shadowRadius: 18,
+      elevation: 6,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 18,
+    },
+    sectionIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: palette.accentSoft,
+      marginRight: 12,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: palette.textPrimary,
+    },
+    sectionSubtitle: {
+      color: palette.textSecondary,
+      fontSize: 13,
+      marginTop: 4,
+      lineHeight: 19,
+    },
+    inputLabel: {
+      fontSize: 12,
+      letterSpacing: 0.5,
+      fontWeight: '600',
+      color: palette.textSecondary,
+      textTransform: 'uppercase',
+      marginBottom: 12,
+    },
+    inputLabelSpacing: {
+      marginTop: 22,
+    },
+    pillGroup: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginHorizontal: -6,
+    },
+    optionPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.elevated,
+      marginHorizontal: 6,
+      marginBottom: 12,
+      flexGrow: 1,
+      minWidth: 150,
+    },
+    optionPillActive: {
+      borderColor: palette.accent,
+      backgroundColor: palette.accentSoft,
+    },
+    optionIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: palette.badgeSurface,
+      marginRight: 12,
+    },
+    optionIconActive: {
+      backgroundColor: palette.accent,
+    },
+    optionPillText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: palette.textPrimary,
+    },
+    optionPillTextActive: {
+      color: palette.pillTextActive,
+    },
+    optionPillCaption: {
+      fontSize: 12,
+      color: palette.textSecondary,
+      marginTop: 2,
+    },
+    helperText: {
+      color: palette.textSecondary,
+      fontSize: 13,
+      marginTop: 8,
+      lineHeight: 20,
+    },
+    textArea: {
+      backgroundColor: palette.inputBackground,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: palette.inputBorder,
+      padding: 16,
+      minHeight: 120,
+      color: palette.textPrimary,
+      lineHeight: 20,
+    },
+    primaryButton: {
+      marginTop: 16,
+      backgroundColor: palette.buttonBackground,
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonDisabled: {
+      opacity: 0.5,
+    },
+    primaryButtonText: {
+      color: palette.buttonText,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    secondaryButton: {
+      marginTop: 18,
+      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      backgroundColor: palette.secondaryButton,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    secondaryButtonText: {
+      color: palette.secondaryButtonText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    secondaryButtonIcon: {
+      marginRight: 12,
+    },
+    aboutText: {
+      color: palette.textSecondary,
+      fontSize: 14,
+      lineHeight: 22,
+    },
+    versionTag: {
+      marginTop: 16,
+      alignSelf: 'flex-start',
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: palette.accentSoft,
+    },
+    versionTagText: {
+      color: palette.accent,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.4,
+    },
+  });
 
 export default function SettingsPage({ styles }) {
   const [theme, setTheme] = useState('Light');
   const [fontSize, setFontSize] = useState('Medium');
-  
-  // Dropdown states
-  const [themeDropdownVisible, setThemeDropdownVisible] = useState(false);
-  const [fontSizeDropdownVisible, setFontSizeDropdownVisible] = useState(false);
-  
-  // Feedback form state
   const [feedbackText, setFeedbackText] = useState('');
-  
-  // Options for dropdowns
-  const themeOptions = ['Light', 'Dark'];
-  const fontSizeOptions = ['Small', 'Medium', 'Large'];
-  
-  // Text content
+
   const content = {
     appearance: 'Appearance & Display',
     theme: 'Theme Selection',
     fontSize: 'Font Size',
-    feedback: 'Feedback/Support',
-    about: 'About Us',
-    feedbackPlaceholder: 'Enter your feedback here...',
-    submit: 'Submit',
-    aboutText: 'Todo App is a simple task management application designed to help you organize your daily tasks efficiently.',
-    contactUs: 'Contact Us',
-    version: 'Version 1.0.0'
+    feedback: 'Feedback & Support',
+    about: 'About Todo',
+    feedbackPlaceholder: 'Tell us what is working well or what could be better...',
+    submit: 'Submit feedback',
+    aboutText:
+      'Todo App helps you organize and complete the work that matters. We build every screen with focus and clarity in mind.',
+    contactUs: 'Email support',
+    version: 'Version 1.0.0',
   };
-  
-  // Load saved settings
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('theme');
         const savedFontSize = await AsyncStorage.getItem('fontSize');
-        
-        if (savedTheme) setTheme(savedTheme);
-        if (savedFontSize) setFontSize(savedFontSize);
-        
-        // Apply settings to the app
+
+        if (savedTheme) {
+          setTheme(savedTheme);
+        }
+        if (savedFontSize) {
+          setFontSize(savedFontSize);
+        }
+
         applySettings(savedTheme || theme, savedFontSize || fontSize);
       } catch (error) {
         console.error('Error loading settings:', error);
       }
     };
-    
+
     loadSettings();
   }, []);
-  
-  // Save settings to AsyncStorage and apply them
+
+  const applyTheme = (selectedTheme) => {
+    if (styles?.onThemeChange) {
+      styles.onThemeChange(selectedTheme);
+    }
+  };
+
+  const applyFontSize = (selectedFontSize) => {
+    setFontSize(selectedFontSize);
+    if (styles?.onFontSizeChange) {
+      styles.onFontSizeChange(selectedFontSize);
+    }
+  };
+
+  const applySettings = (selectedTheme, selectedFontSize) => {
+    if (selectedTheme) {
+      applyTheme(selectedTheme);
+    }
+    if (selectedFontSize) {
+      applyFontSize(selectedFontSize);
+    }
+  };
+
   const saveSettings = async (setting, value) => {
     try {
       await AsyncStorage.setItem(setting, value);
-      
-      // Apply settings immediately
+
       if (setting === 'theme') {
         setTheme(value);
         applyTheme(value);
       } else if (setting === 'fontSize') {
-        setFontSize(value);
         applyFontSize(value);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
     }
   };
-  
-  // Apply theme to the app
-  const applyTheme = (selectedTheme) => {
-    console.log('Theme set to:', selectedTheme);
-    
-    // For React Native, we need to make sure the theme change is propagated to App.js
-    // This is done by updating the AsyncStorage and the state in App.js
-    // We'll also need to force a re-render of the app to apply the theme changes
-    
-    // Notify App.js that theme has changed
-    if (styles && styles.onThemeChange) {
-      styles.onThemeChange(selectedTheme);
-    }
-  };
-  
-  // Apply font size to the app
-  const applyFontSize = (selectedFontSize) => {
-    console.log('Font size set to:', selectedFontSize);
-    
-    // Save to AsyncStorage directly to ensure persistence
-    AsyncStorage.setItem('fontSize', selectedFontSize).then(() => {
-      console.log('Font size saved to AsyncStorage:', selectedFontSize);
-    }).catch(error => {
-      console.error('Error saving font size to AsyncStorage:', error);
-    });
-    
-    // Notify App.js that font size has changed
-    if (styles && styles.onFontSizeChange) {
-      // Call the callback directly and force immediate update
-      styles.onFontSizeChange(selectedFontSize);
-      
-      // Force a re-render of the component
-      setFontSize(selectedFontSize);
-    } else {
-      // Fallback if callback is not available
-      console.warn('onFontSizeChange callback not available, font size may not be applied correctly');
-    }
-  };
-  
-  // Apply all settings
-  const applySettings = (selectedTheme, selectedFontSize) => {
-    applyTheme(selectedTheme);
-    applyFontSize(selectedFontSize);
-  };
-  
-  // Handle dropdown selection
+
   const handleSelect = (type, value) => {
-    if (type === 'theme') {
-      setTheme(value);
-      setThemeDropdownVisible(false);
-      // Apply theme immediately
-      applyTheme(value);
-    } else if (type === 'fontSize') {
-      setFontSize(value);
-      setFontSizeDropdownVisible(false);
-      
-      // Apply font size immediately with direct style changes
-      applyFontSize(value);
-      
-      // Force immediate update in parent component
-      if (styles && styles.onFontSizeChange) {
-        // Call multiple times to ensure the change is applied
-        styles.onFontSizeChange(value);
-        
-        // Force a re-render after a short delay
-        setTimeout(() => {
-          styles.onFontSizeChange(value);
-        }, 100);
-      }
+    if (type === 'theme' && value !== theme) {
+      saveSettings('theme', value);
+    }
+    if (type === 'fontSize' && value !== fontSize) {
+      saveSettings('fontSize', value);
     }
   };
-  
-  // Handle feedback submission
+
   const handleFeedbackSubmit = () => {
     if (feedbackText.trim()) {
-      // In a real app, this would send the feedback to a server
       Alert.alert('Thank you!', 'Your feedback has been submitted.');
       setFeedbackText('');
     } else {
       Alert.alert('Error', 'Please enter your feedback before submitting.');
     }
   };
-  
-  // Render dropdown
-  const renderDropdown = (visible, options, onSelect, type) => {
-    if (!visible) return null;
-    
-    return (
-      <Modal
-        transparent={true}
-        visible={visible}
-        animationType="fade"
-        onRequestClose={() => {
-          if (type === 'theme') setThemeDropdownVisible(false);
-          else if (type === 'fontSize') setFontSizeDropdownVisible(false);
-        }}
-      >
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }}
-          activeOpacity={1}
-          onPress={() => {
-            if (type === 'theme') setThemeDropdownVisible(false);
-            else if (type === 'fontSize') setFontSizeDropdownVisible(false);
-          }}
-        >
-          <View style={[localStyles.dropdownContainer, { backgroundColor: styles?.appContainer?.backgroundColor || '#fff' }]}>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
+
+  const backgroundColor = (styles?.appContainer?.backgroundColor || '').toLowerCase();
+  const isDark =
+    backgroundColor &&
+    backgroundColor !== '#ffffff' &&
+    backgroundColor !== '#fff' &&
+    backgroundColor !== 'white';
+
+  const palette = useMemo(() => (isDark ? DARK_PALETTE : LIGHT_PALETTE), [isDark]);
+  const themedStyles = useMemo(() => createThemedStyles(palette), [palette]);
+
+  return (
+    <ScrollView
+      style={themedStyles.screen}
+      contentContainerStyle={themedStyles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={themedStyles.headerCard}>
+        <View style={themedStyles.headerIcon}>
+          <MaterialIcons name="tune" size={22} color={palette.accent} />
+        </View>
+        <Text style={themedStyles.headerTitle}>Settings</Text>
+        <Text style={themedStyles.headerSubtitle}>
+          Tailor Todo to match the way you plan, focus, and ship your day.
+        </Text>
+        <View style={themedStyles.headerBadge}>
+          <Text style={themedStyles.headerBadgeText}>Personalize your experience</Text>
+        </View>
+      </View>
+
+      <View style={themedStyles.sectionCard}>
+        <View style={themedStyles.sectionHeader}>
+          <View style={themedStyles.sectionIcon}>
+            <MaterialIcons name="palette" size={20} color={palette.accent} />
+          </View>
+          <View>
+            <Text style={themedStyles.sectionTitle}>{content.appearance}</Text>
+            <Text style={themedStyles.sectionSubtitle}>
+              Switch themes and adjust text comfort for easier reading.
+            </Text>
+          </View>
+        </View>
+
+        <Text style={themedStyles.inputLabel}>{content.theme}</Text>
+        <View style={themedStyles.pillGroup}>
+          {themeChoices.map((option) => {
+            const selected = theme === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  themedStyles.optionPill,
+                  selected && themedStyles.optionPillActive,
+                ]}
+                onPress={() => handleSelect('theme', option.value)}
+                activeOpacity={0.9}
+              >
+                <View
                   style={[
-                    localStyles.dropdownItem,
-                    type === 'theme' && item === theme && { backgroundColor: '#444' },
-                    type === 'fontSize' && item === fontSize && { backgroundColor: '#444' }
+                    themedStyles.optionIcon,
+                    selected && themedStyles.optionIconActive,
                   ]}
-                  onPress={() => onSelect(type, item)}
                 >
-                  <Text 
+                  <MaterialIcons
+                    name={option.icon}
+                    size={18}
+                    color={selected ? palette.buttonText : palette.accent}
+                  />
+                </View>
+                <View>
+                  <Text
                     style={[
-                      localStyles.dropdownItemText,
-                      { color: styles?.taskTitle?.color || '#000' },
-                      // Apply the actual font size to the font size options
-                      type === 'fontSize' && {
-                        fontSize: item === 'Small' ? 14 : item === 'Large' ? 18 : 16
-                      }
+                      themedStyles.optionPillText,
+                      selected && themedStyles.optionPillTextActive,
                     ]}
                   >
-                    {item}
+                    {option.title}
                   </Text>
-                </TouchableOpacity>
-              )}
-            />
+                  <Text style={themedStyles.optionPillCaption}>{option.caption}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={themedStyles.helperText}>
+          Choose the mood that keeps you feeling clear and focused.
+        </Text>
+
+        <Text
+          style={[themedStyles.inputLabel, themedStyles.inputLabelSpacing]}
+        >
+          {content.fontSize}
+        </Text>
+        <View style={themedStyles.pillGroup}>
+          {fontChoices.map((option) => {
+            const selected = fontSize === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  themedStyles.optionPill,
+                  selected && themedStyles.optionPillActive,
+                ]}
+                onPress={() => handleSelect('fontSize', option.value)}
+                activeOpacity={0.9}
+              >
+                <View
+                  style={[
+                    themedStyles.optionIcon,
+                    selected && themedStyles.optionIconActive,
+                  ]}
+                >
+                  <MaterialIcons
+                    name={option.icon}
+                    size={18}
+                    color={selected ? palette.buttonText : palette.accent}
+                  />
+                </View>
+                <View>
+                  <Text
+                    style={[
+                      themedStyles.optionPillText,
+                      selected && themedStyles.optionPillTextActive,
+                    ]}
+                  >
+                    {option.title}
+                  </Text>
+                  <Text style={themedStyles.optionPillCaption}>{option.caption}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={themedStyles.helperText}>
+          Adjust text sizes to match your reading comfort across the app.
+        </Text>
+      </View>
+
+      <View style={themedStyles.sectionCard}>
+        <View style={themedStyles.sectionHeader}>
+          <View style={themedStyles.sectionIcon}>
+            <MaterialIcons name="support-agent" size={20} color={palette.accent} />
           </View>
-        </TouchableOpacity>
-      </Modal>
-    );
-  };
-  
-  return (
-    <ScrollView style={[styles.innerContainer, localStyles.container]}>
-      <Text style={localStyles.sectionTitle}>{content.appearance}</Text>
-      
-      {/* Theme Selection */}
-      <View style={localStyles.settingItem}>
-        <Text style={localStyles.settingLabel}>{content.theme}</Text>
-        <TouchableOpacity
-          style={localStyles.dropdown}
-          onPress={() => {
-            setThemeDropdownVisible(!themeDropdownVisible);
-            setFontSizeDropdownVisible(false);
-          }}
-        >
-          <Text style={localStyles.dropdownText}>{theme}</Text>
-        </TouchableOpacity>
-        {renderDropdown(themeDropdownVisible, themeOptions, handleSelect, 'theme')}
-      </View>
-      
-      {/* Font Size */}
-      <View style={localStyles.settingItem}>
-        <Text style={localStyles.settingLabel}>{content.fontSize}</Text>
-        <TouchableOpacity
-          style={localStyles.dropdown}
-          onPress={() => {
-            setFontSizeDropdownVisible(!fontSizeDropdownVisible);
-            setThemeDropdownVisible(false);
-          }}
-        >
-          <Text style={localStyles.dropdownText}>{fontSize}</Text>
-        </TouchableOpacity>
-        {renderDropdown(fontSizeDropdownVisible, fontSizeOptions, handleSelect, 'fontSize')}
-      </View>
-      
-      {/* Feedback/Support */}
-      <Text style={[localStyles.sectionTitle, { marginTop: 20 }]}>{content.feedback}</Text>
-      <View style={localStyles.feedbackContainer}>
+          <View>
+            <Text style={themedStyles.sectionTitle}>{content.feedback}</Text>
+            <Text style={themedStyles.sectionSubtitle}>
+              Share what you love or what we should tune next—we respond quickly.
+            </Text>
+          </View>
+        </View>
+
         <TextInput
-          style={localStyles.feedbackInput}
+          style={themedStyles.textArea}
           placeholder={content.feedbackPlaceholder}
+          placeholderTextColor={palette.placeholder}
           value={feedbackText}
-          onChangeText={setFeedbackText}
           multiline
+          onChangeText={setFeedbackText}
         />
         <TouchableOpacity
-          style={localStyles.submitButton}
+          style={[
+            themedStyles.primaryButton,
+            !feedbackText.trim() && themedStyles.primaryButtonDisabled,
+          ]}
           onPress={handleFeedbackSubmit}
+          activeOpacity={0.9}
+          disabled={!feedbackText.trim()}
         >
-          <Text style={localStyles.submitButtonText}>{content.submit}</Text>
+          <Text style={themedStyles.primaryButtonText}>{content.submit}</Text>
         </TouchableOpacity>
       </View>
-      
-      {/* About Us */}
-      <Text style={[localStyles.sectionTitle, { marginTop: 20 }]}>{content.about}</Text>
-      <View style={localStyles.aboutContainer}>
-        <Text style={localStyles.aboutText}>{content.aboutText}</Text>
+
+      <View style={themedStyles.sectionCard}>
+        <View style={themedStyles.sectionHeader}>
+          <View style={themedStyles.sectionIcon}>
+            <MaterialIcons name="info" size={20} color={palette.accent} />
+          </View>
+          <View>
+            <Text style={themedStyles.sectionTitle}>{content.about}</Text>
+            <Text style={themedStyles.sectionSubtitle}>
+              Learn more about how Todo keeps you organized every day.
+            </Text>
+          </View>
+        </View>
+
+        <Text style={themedStyles.aboutText}>{content.aboutText}</Text>
+
         <TouchableOpacity
-          style={localStyles.contactButton}
+          style={themedStyles.secondaryButton}
           onPress={() => Linking.openURL('mailto:support@todoapp.com')}
+          activeOpacity={0.85}
         >
-          <Text style={localStyles.contactButtonText}>{content.contactUs}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <MaterialIcons
+              name="mail-outline"
+              size={18}
+              color={palette.secondaryButtonText}
+              style={themedStyles.secondaryButtonIcon}
+            />
+            <Text style={themedStyles.secondaryButtonText}>{content.contactUs}</Text>
+          </View>
+          <MaterialIcons
+            name="open-in-new"
+            size={18}
+            color={palette.secondaryButtonText}
+          />
         </TouchableOpacity>
-        <Text style={localStyles.versionText}>{content.version}</Text>
+
+        <View style={themedStyles.versionTag}>
+          <Text style={themedStyles.versionTagText}>{content.version}</Text>
+        </View>
       </View>
     </ScrollView>
   );
 }
-
-const localStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  settingItem: {
-    marginBottom: 16,
-    position: 'relative',
-  },
-  settingLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  dropdown: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    backgroundColor: '#fff',
-  },
-  dropdownText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    top: '30%',
-    left: '10%',
-    right: '10%',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    maxHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  dropdownItemText: {
-    fontSize: 16,
-  },
-  feedbackContainer: {
-    marginBottom: 16,
-  },
-  feedbackInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 12,
-    height: 100,
-    textAlignVertical: 'top',
-    marginBottom: 8,
-  },
-  submitButton: {
-    backgroundColor: '#222',
-    padding: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  aboutContainer: {
-    marginBottom: 16,
-  },
-  aboutText: {
-    fontSize: 16,
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  contactButton: {
-    backgroundColor: '#222',
-    padding: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  contactButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  versionText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-});
