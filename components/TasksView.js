@@ -12,6 +12,8 @@ export default function TasksView({
   filteredTasks,
   toggleTask,
   toggleImportant,
+  theme = 'Light',
+  fontScale = 1,
 }) {
   return (
     <View style={styles.innerContainer}>
@@ -41,7 +43,8 @@ export default function TasksView({
             task={task}
             onToggle={() => toggleTask(task.id)}
             onToggleImportant={() => toggleImportant(task.id)}
-            styles={styles}
+            theme={theme}
+            fontScale={fontScale}
           />
         ))}
       </ScrollView>

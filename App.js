@@ -12,7 +12,7 @@ import SettingsPage from './components/SettingsPage';
 import FooterNavigationBar from './components/FooterNavigationBar';
 
 // Styles
-import styles from './styles';
+import defaultStyles from './styles';
 
 // Constants
 const NAV_HEIGHT = 60;
@@ -341,8 +341,7 @@ export default function App() {
   // Get dynamic styles based on theme and font size
   const getAppStyles = () => {
     // Apply theme and font size to styles
-    const baseStyles = styles;
-    
+    const baseStyles = defaultStyles;
     // Force re-render when theme or font size changes
     console.log('Applying styles with theme:', theme, 'fontSize:', fontSize, 'forceUpdate:', forceUpdate);
     
@@ -453,13 +452,14 @@ export default function App() {
     console.log('Recalculating styles with fontSize:', fontSize);
     return getAppStyles();
   }, [theme, fontSize, forceUpdate]);
-  
-  // Define font size multiplier function
-  const getFontSizeMultiplier = (size) => {
+
+  const fontScale = useMemo(() => getFontSizeMultiplier(fontSize), [fontSize]);
+
+  function getFontSizeMultiplier(size) {
     if (size === 'Small') return 0.85;
     if (size === 'Large') return 1.3;
-    return 1; // Medium is default
-  };
+    return 1;
+  }
   
   // Define theme colors
   const themeColors = {
@@ -538,7 +538,8 @@ export default function App() {
     theme,
     setTheme,
     fontSize,
-    setFontSize
+    setFontSize,
+    fontScale,
   };
 
   // Render based on current view
@@ -558,12 +559,12 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.appContainer}>
+    <SafeAreaView style={dynamicStyles.appContainer}>
       
       {renderCurrentView()}
 
       <FooterNavigationBar
-        styles={styles}
+        styles={dynamicStyles}
         currentView={currentView}
         setCurrentView={setCurrentView}
         NAV_HEIGHT={NAV_HEIGHT}

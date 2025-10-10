@@ -92,7 +92,7 @@ const fontChoices = [
   },
 ];
 
-const createThemedStyles = (palette) =>
+const createThemedStyles = (palette, fontScale = 1) =>
   StyleSheet.create({
     screen: {
       flex: 1,
@@ -126,15 +126,15 @@ const createThemedStyles = (palette) =>
       marginBottom: 16,
     },
     headerTitle: {
-      fontSize: 28,
+      fontSize: 28 * fontScale,
       fontWeight: '700',
       color: palette.textPrimary,
     },
     headerSubtitle: {
       marginTop: 8,
       color: palette.textSecondary,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: 14 * fontScale,
+      lineHeight: 21 * fontScale,
     },
     headerBadge: {
       alignSelf: 'flex-start',
@@ -146,7 +146,7 @@ const createThemedStyles = (palette) =>
     },
     headerBadgeText: {
       color: palette.accent,
-      fontSize: 12,
+      fontSize: 12 * fontScale,
       fontWeight: '600',
       letterSpacing: 0.4,
     },
@@ -178,18 +178,18 @@ const createThemedStyles = (palette) =>
       marginRight: 12,
     },
     sectionTitle: {
-      fontSize: 18,
+      fontSize: 18 * fontScale,
       fontWeight: '700',
       color: palette.textPrimary,
     },
     sectionSubtitle: {
       color: palette.textSecondary,
-      fontSize: 13,
+      fontSize: 13 * fontScale,
       marginTop: 4,
-      lineHeight: 19,
+      lineHeight: 19 * fontScale,
     },
     inputLabel: {
-      fontSize: 12,
+      fontSize: 12 * fontScale,
       letterSpacing: 0.5,
       fontWeight: '600',
       color: palette.textSecondary,
@@ -241,7 +241,7 @@ const createThemedStyles = (palette) =>
       paddingRight: 4,
     },
     optionPillText: {
-      fontSize: 15,
+      fontSize: 15 * fontScale,
       fontWeight: '600',
       color: palette.textPrimary,
     },
@@ -249,16 +249,16 @@ const createThemedStyles = (palette) =>
       color: palette.pillTextActive,
     },
     optionPillCaption: {
-      fontSize: 12,
+      fontSize: 12 * fontScale,
       color: palette.textSecondary,
       marginTop: 2,
-      lineHeight: 18,
+      lineHeight: 18 * fontScale,
     },
     helperText: {
       color: palette.textSecondary,
-      fontSize: 13,
+      fontSize: 13 * fontScale,
       marginTop: 8,
-      lineHeight: 20,
+      lineHeight: 20 * fontScale,
     },
     textArea: {
       backgroundColor: palette.inputBackground,
@@ -268,7 +268,8 @@ const createThemedStyles = (palette) =>
       padding: 16,
       minHeight: 120,
       color: palette.textPrimary,
-      lineHeight: 20,
+      lineHeight: 20 * fontScale,
+      fontSize: 15 * fontScale,
     },
     primaryButton: {
       marginTop: 16,
@@ -283,7 +284,7 @@ const createThemedStyles = (palette) =>
     },
     primaryButtonText: {
       color: palette.buttonText,
-      fontSize: 15,
+      fontSize: 15 * fontScale,
       fontWeight: '700',
     },
     secondaryButton: {
@@ -299,7 +300,7 @@ const createThemedStyles = (palette) =>
     },
     secondaryButtonText: {
       color: palette.secondaryButtonText,
-      fontSize: 15,
+      fontSize: 15 * fontScale,
       fontWeight: '600',
     },
     secondaryButtonIcon: {
@@ -313,8 +314,8 @@ const createThemedStyles = (palette) =>
     },
     aboutText: {
       color: palette.textSecondary,
-      fontSize: 14,
-      lineHeight: 22,
+      fontSize: 14 * fontScale,
+      lineHeight: 22 * fontScale,
     },
     versionTag: {
       marginTop: 16,
@@ -326,16 +327,31 @@ const createThemedStyles = (palette) =>
     },
     versionTagText: {
       color: palette.accent,
-      fontSize: 12,
+      fontSize: 12 * fontScale,
       fontWeight: '600',
       letterSpacing: 0.4,
     },
   });
 
-export default function SettingsPage({ styles }) {
-  const [theme, setTheme] = useState('Light');
-  const [fontSize, setFontSize] = useState('Medium');
+export default function SettingsPage({
+  styles,
+  theme: activeTheme = 'Light',
+  setTheme: updateTheme,
+  fontSize: activeFontSize = 'Medium',
+  setFontSize: updateFontSize,
+  fontScale = 1,
+}) {
+  const [theme, setTheme] = useState(activeTheme);
+  const [fontSize, setFontSize] = useState(activeFontSize);
   const [feedbackText, setFeedbackText] = useState('');
+
+  useEffect(() => {
+    setTheme(activeTheme);
+  }, [activeTheme]);
+
+  useEffect(() => {
+    setFontSize(activeFontSize);
+  }, [activeFontSize]);
 
   const content = {
     appearance: 'Appearance & Display',
@@ -377,12 +393,18 @@ export default function SettingsPage({ styles }) {
     if (styles?.onThemeChange) {
       styles.onThemeChange(selectedTheme);
     }
+    if (typeof updateTheme === 'function') {
+      updateTheme(selectedTheme);
+    }
   };
 
   const applyFontSize = (selectedFontSize) => {
     setFontSize(selectedFontSize);
     if (styles?.onFontSizeChange) {
       styles.onFontSizeChange(selectedFontSize);
+    }
+    if (typeof updateFontSize === 'function') {
+      updateFontSize(selectedFontSize);
     }
   };
 
@@ -428,15 +450,14 @@ export default function SettingsPage({ styles }) {
     }
   };
 
-  const backgroundColor = (styles?.appContainer?.backgroundColor || '').toLowerCase();
-  const isDark =
-    backgroundColor &&
-    backgroundColor !== '#ffffff' &&
-    backgroundColor !== '#fff' &&
-    backgroundColor !== 'white';
-
-  const palette = useMemo(() => (isDark ? DARK_PALETTE : LIGHT_PALETTE), [isDark]);
-  const themedStyles = useMemo(() => createThemedStyles(palette), [palette]);
+  const palette = useMemo(
+    () => (theme === 'Dark' ? DARK_PALETTE : LIGHT_PALETTE),
+    [theme],
+  );
+  const themedStyles = useMemo(
+    () => createThemedStyles(palette, fontScale || 1),
+    [palette, fontScale],
+  );
 
   return (
     <ScrollView

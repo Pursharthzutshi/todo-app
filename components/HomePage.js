@@ -1,24 +1,119 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import TaskCard from './TaskCard.js';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
-import getVisibleTasks from './VisibleTasks.js';
-import AllDays from '../AllDays.js';
-import CalendarModal from './CalendarModal.js';
+import getVisibleTasks from './VisibleTasks';
+import AllDays from '../AllDays';
+import CalendarModal from './CalendarModal';
+import TaskCard from './TaskCard';
+
+const HOME_THEMES = {
+  Light: {
+    screen: '#F5F7FB',
+    card: '#FFFFFF',
+    accent: '#6366F1',
+    accentSoft: '#EEF2FF',
+    cardBorder: 'rgba(15,23,42,0.08)',
+    cardShadow: 'rgba(15,23,42,0.08)',
+    textPrimary: '#0F172A',
+    textSecondary: '#475467',
+    textMuted: '#94A3B8',
+    filterBackground: '#FFFFFF',
+    filterBorder: '#E2E8F0',
+    filterActive: '#EEF2FF',
+    filterActiveBorder: '#6366F1',
+    chipIcon: '#6366F1',
+    inputBackground: '#FFFFFF',
+    inputBorder: '#E2E8F0',
+    inputPlaceholder: '#94A3B8',
+    pillBackground: '#F8FAFF',
+    pillText: '#4338CA',
+    metricSuccess: '#22C55E',
+    metricNeutral: '#3B82F6',
+    metricWarning: '#F59E0B',
+    emptyState: '#94A3B8',
+    addButtonBackground: '#111827',
+    addButtonText: '#FFFFFF',
+  },
+  Dark: {
+    screen: '#0B1120',
+    card: '#111C2E',
+    accent: '#818CF8',
+    accentSoft: 'rgba(129,140,248,0.25)',
+    cardBorder: 'rgba(148,163,184,0.18)',
+    cardShadow: 'rgba(2,6,23,0.5)',
+    textPrimary: '#E2E8F0',
+    textSecondary: '#A5B4FC',
+    textMuted: '#6B7280',
+    filterBackground: 'rgba(17,28,46,0.6)',
+    filterBorder: 'rgba(148,163,184,0.28)',
+    filterActive: 'rgba(129,140,248,0.24)',
+    filterActiveBorder: '#A5B4FC',
+    chipIcon: '#A5B4FC',
+    inputBackground: '#1E293B',
+    inputBorder: 'rgba(129,140,248,0.32)',
+    inputPlaceholder: '#94A3B8',
+    pillBackground: 'rgba(148,163,184,0.16)',
+    pillText: '#E0E7FF',
+    metricSuccess: '#4ADE80',
+    metricNeutral: '#93C5FD',
+    metricWarning: '#FBBF24',
+    emptyState: '#94A3B8',
+    addButtonBackground: '#4338CA',
+    addButtonText: '#F8FAFF',
+  },
+};
+
+const scaleFont = (value, multiplier) =>
+  Math.round(value * multiplier * 100) / 100;
+
+const startOfDay = (value) => {
+  if (!value && value !== 0) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const isDueToday = (task) => {
+  const today = startOfDay(new Date());
+  const due = task.dueDateISO || task.dueDate;
+  if (!due) return false;
+  const dueDate = startOfDay(due);
+  if (!dueDate) return false;
+  return dueDate.getTime() === today.getTime();
+};
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
 
 export default function HomePage({
-  styles,
   NAV_HEIGHT,
-  showMenu, setShowMenu,
-  activeFilter, setActiveFilter,
-  newTask, setNewTask, addTask,
+  showMenu,
+  setShowMenu,
+  activeFilter,
+  setActiveFilter,
+  newTask,
+  setNewTask,
+  addTask,
   filteredTasks = [],
   toggleTask,
   toggleImportant,
   toggleWishlist,
   title = 'Today',
   dateLabel,
-  savedTodoTasks,
+  savedTodoTasks = [],
   selectedPriority,
   setSelectedPriority,
   searchAllTodoListItem,
@@ -30,8 +125,11 @@ export default function HomePage({
   selectedDueDateKey,
   setSelectedDueDateKey,
   selectedDueDateLabel,
-  dayCounts = {}
+  dayCounts = {},
+  theme = 'Light',
+  fontScale = 1,
 }) {
+  const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
   const priorityOptions = [
     { key: '1', value: 'Urgent' },
     { key: '2', value: 'High' },
@@ -39,10 +137,232 @@ export default function HomePage({
     { key: '4', value: 'Low' },
     { key: '5', value: 'None' },
   ];
+  const priorityDefault = useMemo(() => {
+    const value = selectedPriority || 'None';
+    return priorityOptions.find((option) => option.value === value) || priorityOptions[4];
+  }, [selectedPriority]);
+
+  const homeStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        screen: {
+          flex: 1,
+          backgroundColor: palette.screen,
+        },
+        content: {
+          paddingHorizontal: 20,
+          paddingBottom: NAV_HEIGHT + 20,
+          paddingTop: 26,
+          gap: 22,
+        },
+        headerCard: {
+          padding: 24,
+          borderRadius: 28,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: theme === 'Dark' ? 0.28 : 0.14,
+          shadowRadius: 24,
+          elevation: 8,
+        },
+        headerTop: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        headerGreeting: {
+          fontSize: scaleFont(18, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        headerTitle: {
+          marginTop: 6,
+          fontSize: scaleFont(28, fontScale),
+          fontWeight: '700',
+          color: palette.textPrimary,
+        },
+        headerSubtitle: {
+          marginTop: 8,
+          fontSize: scaleFont(13, fontScale),
+          color: palette.textSecondary,
+          lineHeight: scaleFont(20, fontScale),
+        },
+        headerBadgeRow: {
+          marginTop: 18,
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 10,
+        },
+        headerBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: palette.pillBackground,
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          borderRadius: 999,
+        },
+        headerBadgeText: {
+          marginLeft: 6,
+          color: palette.pillText,
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '600',
+        },
+        filterGroup: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          marginHorizontal: -6,
+        },
+        filterChip: {
+          paddingVertical: 10,
+          paddingHorizontal: 16,
+          borderRadius: 18,
+          borderWidth: 1,
+          marginHorizontal: 6,
+          marginBottom: 12,
+          backgroundColor: palette.filterBackground,
+          borderColor: palette.filterBorder,
+        },
+        filterChipActive: {
+          backgroundColor: palette.filterActive,
+          borderColor: palette.filterActiveBorder,
+        },
+        filterChipText: {
+          fontSize: scaleFont(13, fontScale),
+          fontWeight: '600',
+          color: palette.textSecondary,
+        },
+        filterChipTextActive: {
+          color: palette.chipIcon,
+        },
+        sectionCard: {
+          padding: 20,
+          borderRadius: 24,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: theme === 'Dark' ? 0.22 : 0.12,
+          shadowRadius: 20,
+          elevation: 6,
+        },
+        sectionTitleRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 18,
+        },
+        sectionTitle: {
+          fontSize: scaleFont(18, fontScale),
+          fontWeight: '700',
+          color: palette.textPrimary,
+        },
+        sectionSubtitle: {
+          fontSize: scaleFont(13, fontScale),
+          color: palette.textSecondary,
+          marginTop: 4,
+        },
+        addTaskInput: {
+          backgroundColor: palette.inputBackground,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          color: palette.textPrimary,
+          fontSize: scaleFont(15, fontScale),
+        },
+        selectListWrapper: {
+          marginTop: 12,
+        },
+        dueDateButton: {
+          marginTop: 12,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          backgroundColor: palette.inputBackground,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        dueDateText: {
+          fontSize: scaleFont(14, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '500',
+        },
+        dueDateValue: {
+          fontSize: scaleFont(14, fontScale),
+          color: palette.accent,
+          fontWeight: '600',
+        },
+        addTaskButton: {
+          marginTop: 16,
+          borderRadius: 16,
+          paddingVertical: 15,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          gap: 8,
+          backgroundColor: palette.addButtonBackground,
+        },
+        addTaskButtonText: {
+          fontSize: scaleFont(15, fontScale),
+          color: palette.addButtonText,
+          fontWeight: '700',
+        },
+        statsRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 12,
+        },
+        statCard: {
+          flexBasis: '31%',
+          backgroundColor: palette.pillBackground,
+          borderRadius: 18,
+          paddingVertical: 16,
+          paddingHorizontal: 14,
+        },
+        statValue: {
+          fontSize: scaleFont(20, fontScale),
+          fontWeight: '700',
+          color: palette.textPrimary,
+        },
+        statLabel: {
+          marginTop: 6,
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+        },
+        searchInput: {
+          marginTop: 12,
+          backgroundColor: palette.inputBackground,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          color: palette.textPrimary,
+          fontSize: scaleFont(14, fontScale),
+        },
+        taskList: {
+          marginTop: 16,
+        },
+        emptyState: {
+          marginTop: 20,
+          fontSize: scaleFont(14, fontScale),
+          color: palette.emptyState,
+          textAlign: 'center',
+        },
+      }),
+    [palette, theme, NAV_HEIGHT, fontScale],
+  );
 
   const selectedDayDetails = useMemo(() => {
     if (dayFilter === 'all') return null;
-    return Days.find(day => String(day.id) === String(dayFilter));
+    return Days.find((day) => String(day.id) === String(dayFilter));
   }, [Days, dayFilter]);
 
   const pageTitle = useMemo(() => {
@@ -54,7 +374,7 @@ export default function HomePage({
       case 'planned':
         return 'Planned';
       case 'all':
-        return 'All';
+        return 'All Tasks';
       default:
         return title || 'Tasks';
     }
@@ -74,149 +394,251 @@ export default function HomePage({
     }
 
     if (activeFilter === 'all') {
-      if (dayFilter === 'all') return 'All tasks';
+      if (dayFilter === 'all') return dateLabel || 'All tasks';
       return name ? `Tasks for ${name}` : 'Tasks';
     }
 
     return dateLabel || '';
   }, [activeFilter, dayFilter, dateLabel, selectedDayDetails]);
 
-  const handleFilterPress = (filterKey) => {
-    setActiveFilter(filterKey);
-  };
-
-
-  // useEffect(() => {
-  //   console.log({ filteredTasks });
-  //   console.log({ savedTodoTasks });
-  // }, [savedTodoTasks, filteredTasks]);
-
   const [isCalendarVisible, setCalendarVisible] = useState(false);
 
   const tasksToShow = useMemo(
     () => getVisibleTasks(filteredTasks, searchAllTodoListItem),
-    [filteredTasks, searchAllTodoListItem]
+    [filteredTasks, searchAllTodoListItem],
   );
 
+  const totalTasks = savedTodoTasks.length;
+  const completedTasks = savedTodoTasks.filter((task) => task.completed).length;
+  const importantTasks = savedTodoTasks.filter((task) => task.important).length;
+  const plannedTasks = savedTodoTasks.filter((task) => task.dueDateISO).length;
+  const todayTasks = savedTodoTasks.filter(isDueToday).length;
+
   return (
-    <View style={styles.innerContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setShowMenu(!showMenu)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        />
-        <TouchableOpacity style={styles.searchButton} hitSlop={{ top: 10 }}>
-          <Text style={styles.searchIcon}></Text>
-        </TouchableOpacity>
-        
-      </View>
-
-      <View style={styles.titleSection}>
-        <Text style={styles.mainTitle}>{pageTitle}</Text>
-        <Text style={styles.dateText}>{headerSubtitle}</Text>
-      </View>
-
-      <View style={styles.filterContainer}>
-        {['All', 'Today', 'Important', 'Planned'].map((filter) => (
+    <ScrollView
+      style={homeStyles.screen}
+      contentContainerStyle={homeStyles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={homeStyles.headerCard}>
+        <View style={homeStyles.headerTop}>
+          <View>
+            <Text style={homeStyles.headerGreeting}>{getGreeting()}</Text>
+            <Text style={homeStyles.headerTitle}>{pageTitle}</Text>
+          </View>
           <TouchableOpacity
-            key={filter}
             style={[
-              styles.filterButton,
-              activeFilter.toLowerCase() === filter.toLowerCase() && styles.activeFilter
+              {
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: palette.accentSoft,
+              },
             ]}
-            onPress={() => handleFilterPress(filter.toLowerCase())}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setShowMenu(!showMenu)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={[
-              styles.filterText,
-              activeFilter.toLowerCase() === filter.toLowerCase() && styles.activeFilterText
-            ]}>
-              {filter}
-            </Text>
+            <MaterialIcons name="menu" size={22} color={palette.accent} />
           </TouchableOpacity>
-        ))}
+        </View>
+
+        <Text style={homeStyles.headerSubtitle}>{headerSubtitle}</Text>
+
+        <View style={homeStyles.headerBadgeRow}>
+          <View style={homeStyles.headerBadge}>
+            <MaterialIcons name="check-circle" size={16} color={palette.accent} />
+            <Text style={homeStyles.headerBadgeText}>
+              {completedTasks} done
+            </Text>
+          </View>
+          <View style={homeStyles.headerBadge}>
+            <MaterialIcons name="event" size={16} color={palette.accent} />
+            <Text style={homeStyles.headerBadgeText}>
+              {todayTasks} due today
+            </Text>
+          </View>
+          <View style={homeStyles.headerBadge}>
+            <MaterialIcons name="star" size={16} color={palette.accent} />
+            <Text style={homeStyles.headerBadgeText}>
+              {importantTasks} important
+            </Text>
+          </View>
+        </View>
       </View>
 
-      <AllDays
-        Days={Days}
-        dayFilter={dayFilter}
-        setDayFilter={setDayFilter}
-        dayCounts={dayCounts}
-      />
+      <View style={homeStyles.sectionCard}>
+        <View style={homeStyles.sectionTitleRow}>
+          <View>
+            <Text style={homeStyles.sectionTitle}>Quick filters</Text>
+            <Text style={homeStyles.sectionSubtitle}>
+              Jump to the list that needs your focus.
+            </Text>
+          </View>
+        </View>
 
-      <View style={styles.addTaskContainer}>
+        <View style={homeStyles.filterGroup}>
+          {['All', 'Today', 'Important', 'Planned'].map((filter) => {
+            const isActive =
+              activeFilter.toLowerCase() === filter.toLowerCase();
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  homeStyles.filterChip,
+                  isActive && homeStyles.filterChipActive,
+                ]}
+                onPress={() => setActiveFilter(filter.toLowerCase())}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text
+                  style={[
+                    homeStyles.filterChipText,
+                    isActive && homeStyles.filterChipTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <AllDays
+          Days={Days}
+          dayFilter={dayFilter}
+          setDayFilter={setDayFilter}
+          dayCounts={dayCounts}
+          theme={theme}
+          fontScale={fontScale}
+        />
+
+        <View style={homeStyles.statsRow}>
+          <View style={homeStyles.statCard}>
+            <Text style={homeStyles.statValue}>{totalTasks}</Text>
+            <Text style={homeStyles.statLabel}>Total tasks</Text>
+          </View>
+          <View style={homeStyles.statCard}>
+            <Text style={[homeStyles.statValue, { color: palette.metricSuccess }]}>
+              {completedTasks}
+            </Text>
+            <Text style={homeStyles.statLabel}>Completed</Text>
+          </View>
+          <View style={homeStyles.statCard}>
+            <Text style={[homeStyles.statValue, { color: palette.metricNeutral }]}>
+              {plannedTasks}
+            </Text>
+            <Text style={homeStyles.statLabel}>Scheduled</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={homeStyles.sectionCard}>
+        <Text style={homeStyles.sectionTitle}>Add a task</Text>
+        <Text style={homeStyles.sectionSubtitle}>
+          Capture what&apos;s on your mind and give it a plan.
+        </Text>
+
         <TextInput
-          style={styles.addTaskInput}
+          style={homeStyles.addTaskInput}
           placeholder="Add a new task..."
-          placeholderTextColor="#999"
+          placeholderTextColor={palette.inputPlaceholder}
           value={newTask}
           onChangeText={setNewTask}
           onSubmitEditing={addTask}
           returnKeyType="done"
         />
-        <SelectList
-          setSelected={setSelectedPriority}
-          data={priorityOptions}
-          save="value"
-          placeholder="Priority"
-        />
+
+        <View style={homeStyles.selectListWrapper}>
+          <SelectList
+            setSelected={setSelectedPriority}
+            data={priorityOptions}
+            save="value"
+            placeholder="Priority"
+            defaultOption={priorityDefault}
+            boxStyles={{
+              backgroundColor: palette.inputBackground,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: palette.inputBorder,
+            }}
+            dropdownStyles={{
+              backgroundColor: palette.inputBackground,
+              borderColor: palette.inputBorder,
+            }}
+            inputStyles={{
+              color: palette.textPrimary,
+              fontSize: scaleFont(14, fontScale),
+            }}
+            dropdownTextStyles={{
+              color: palette.textPrimary,
+              fontSize: scaleFont(14, fontScale),
+            }}
+          />
+        </View>
+
         <TouchableOpacity
           onPress={() => setCalendarVisible(true)}
-          style={{
-            marginTop: 8,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            borderWidth: 1,
-            borderColor: '#e5e7eb',
-            borderRadius: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#ffffff',
-          }}
+          style={homeStyles.dueDateButton}
         >
-          <Text style={{ color: '#6b7280', fontWeight: '500' }}>Due date</Text>
-          <Text style={{ color: '#4F46E5', fontWeight: '600' }}>
-            {selectedDueDateLabel}
-          </Text>
+          <Text style={homeStyles.dueDateText}>Due date</Text>
+          <Text style={homeStyles.dueDateValue}>{selectedDueDateLabel}</Text>
         </TouchableOpacity>
-        <View>
-          <TouchableOpacity style={styles.addTaskButton} onPress={addTask} hitSlop={{ top: 10 }}>
-            <Text style={styles.addTaskIcon}>Add a New Todo Task <Text style={styles.plusIcon}> +</Text></Text>
-          </TouchableOpacity>
-        </View>
+
+        <TouchableOpacity style={homeStyles.addTaskButton} onPress={addTask}>
+          <MaterialIcons name="add-circle-outline" size={20} color={palette.addButtonText} />
+          <Text style={homeStyles.addTaskButtonText}>Add task to list</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.taskList}>
-        
-      <TextInput
-        style={styles.searchTodoInput}
-        placeholder="Search Your Todo's"
-        placeholderTextColor="#999"
-        value={searchAllTodoListItem}
-        onChangeText={setSearchAllTodoListItem}
-        returnKeyType="search"
-      />
-        {tasksToShow.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            setTasks={setTasks}
-            onToggle={() => toggleTask(task.id)}
-            onToggleImportant={() => toggleImportant(task.id)}
-            onToggleWishlist={() => toggleWishlist(task.id)}
-            styles={styles}
-          />
-        ))}
-      </ScrollView>
+      <View style={homeStyles.sectionCard}>
+        <View style={homeStyles.sectionTitleRow}>
+          <View>
+            <Text style={homeStyles.sectionTitle}>Your tasks</Text>
+            <Text style={homeStyles.sectionSubtitle}>
+              Search or scroll through today&apos;s plan.
+            </Text>
+          </View>
+        </View>
+
+        <TextInput
+          style={homeStyles.searchInput}
+          placeholder="Search your tasks"
+          placeholderTextColor={palette.inputPlaceholder}
+          value={searchAllTodoListItem}
+          onChangeText={setSearchAllTodoListItem}
+          returnKeyType="search"
+        />
+
+        <View style={homeStyles.taskList}>
+          {tasksToShow.length ? (
+            tasksToShow.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                setTasks={setTasks}
+                onToggle={() => toggleTask(task.id)}
+                onToggleImportant={() => toggleImportant(task.id)}
+                onToggleWishlist={() => toggleWishlist(task.id)}
+                theme={theme}
+                fontScale={fontScale}
+              />
+            ))
+          ) : (
+            <Text style={homeStyles.emptyState}>
+              Your list is clear—add a task to get started.
+            </Text>
+          )}
+        </View>
+      </View>
 
       <CalendarModal
         visible={isCalendarVisible}
         onClose={() => setCalendarVisible(false)}
-        onSelect={value => setSelectedDueDateKey(value)}
+        onSelect={(value) => setSelectedDueDateKey(value)}
         selectedDateISO={selectedDueDateKey === 'none' ? null : selectedDueDateKey}
       />
-    </View>
+    </ScrollView>
   );
 }
