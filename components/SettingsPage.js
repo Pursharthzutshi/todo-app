@@ -206,7 +206,7 @@ const createThemedStyles = (palette) =>
     },
     optionPill: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       paddingVertical: 12,
       paddingHorizontal: 14,
       borderRadius: 18,
@@ -217,6 +217,7 @@ const createThemedStyles = (palette) =>
       marginBottom: 12,
       flexGrow: 1,
       minWidth: 150,
+      flexBasis: '48%',
     },
     optionPillActive: {
       borderColor: palette.accent,
@@ -230,9 +231,14 @@ const createThemedStyles = (palette) =>
       alignItems: 'center',
       backgroundColor: palette.badgeSurface,
       marginRight: 12,
+      marginTop: 2,
     },
     optionIconActive: {
       backgroundColor: palette.accent,
+    },
+    optionPillContent: {
+      flex: 1,
+      paddingRight: 4,
     },
     optionPillText: {
       fontSize: 15,
@@ -246,6 +252,7 @@ const createThemedStyles = (palette) =>
       fontSize: 12,
       color: palette.textSecondary,
       marginTop: 2,
+      lineHeight: 18,
     },
     helperText: {
       color: palette.textSecondary,
@@ -288,6 +295,7 @@ const createThemedStyles = (palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      flexWrap: 'nowrap',
     },
     secondaryButtonText: {
       color: palette.secondaryButtonText,
@@ -296,6 +304,12 @@ const createThemedStyles = (palette) =>
     },
     secondaryButtonIcon: {
       marginRight: 12,
+    },
+    secondaryButtonLabelGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 1,
+      paddingRight: 12,
     },
     aboutText: {
       color: palette.textSecondary,
@@ -482,7 +496,7 @@ export default function SettingsPage({ styles }) {
                     color={selected ? palette.buttonText : palette.accent}
                   />
                 </View>
-                <View>
+                <View style={themedStyles.optionPillContent}>
                   <Text
                     style={[
                       themedStyles.optionPillText,
@@ -531,7 +545,7 @@ export default function SettingsPage({ styles }) {
                     color={selected ? palette.buttonText : palette.accent}
                   />
                 </View>
-                <View>
+                <View style={themedStyles.optionPillContent}>
                   <Text
                     style={[
                       themedStyles.optionPillText,
@@ -605,7 +619,7 @@ export default function SettingsPage({ styles }) {
           onPress={() => Linking.openURL('mailto:support@todoapp.com')}
           activeOpacity={0.85}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={themedStyles.secondaryButtonLabelGroup}>
             <MaterialIcons
               name="mail-outline"
               size={18}
