@@ -1,9 +1,13 @@
 // components/NavigationBar.js
 import { View, Text, TouchableOpacity } from 'react-native';
-import styles from '../styles';
 import { useEffect } from 'react';
+import defaultStyles from '../styles';
 
-export default function FooterNavigationBar({currentView, setCurrentView}) {
+export default function FooterNavigationBar({
+  currentView,
+  setCurrentView,
+  styles = defaultStyles,
+}) {
   
   const items = [
     { key: 'home', label: 'Home' },
@@ -19,11 +23,20 @@ export default function FooterNavigationBar({currentView, setCurrentView}) {
   return (
     <View style={styles.FooterNavigationBar}>
       {items.map((item) => (
-          <TouchableOpacity onPress={() => setCurrentView(item.key)}>
-          <Text style={[styles.navText, currentView === item.key && styles.activeNavText]}>
+        <TouchableOpacity
+          key={item.key}
+          style={[
+            styles.navButton,
+            currentView === item.key && styles.activeNavButton,
+          ]}
+          onPress={() => setCurrentView(item.key)}
+        >
+          <Text
+            style={[styles.navText, currentView === item.key && styles.activeNavText]}
+          >
             {item.label}
           </Text>
-          </TouchableOpacity>
+        </TouchableOpacity>
       ))}
     </View>
   );
