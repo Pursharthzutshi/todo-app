@@ -626,7 +626,11 @@ export default function HomePage({
         },
         taskList: {
           marginTop: 12,
+          maxHeight: 420,
+        },
+        taskListContent: {
           gap: 12,
+          paddingBottom: 24,
         },
         emptyState: {
           marginTop: 20,
@@ -837,6 +841,11 @@ export default function HomePage({
     }, 0);
   }, [addTask, setNewTask]);
 
+  const ensureVoiceModule = useCallback(
+    () => Voice && typeof Voice.start === 'function' && typeof Voice.stop === 'function',
+    [],
+  );
+
   const handleVoicePress = useCallback(async () => {
     if (!hasPro) {
       if (typeof onRequestUpgrade === 'function') {
@@ -844,33 +853,36 @@ export default function HomePage({
       }
       return;
     }
-    if (!voiceAvailable) {
+    if (!voiceAvailable || !ensureVoiceModule()) {
       Alert.alert('Microphone unavailable', 'Speech recognition is not available on this device.');
       return;
     }
     try {
       if (isListening) {
-        await Voice.stop();
+        await Voice.stop?.();
         setVoiceStatus('Processing...');
       } else {
         voiceHandledRef.current = false;
         setVoiceStatus('Listening...');
         setVoiceError('');
-        await Voice.start('en-US');
+        await Voice.start?.('en-US');
         setIsListening(true);
       }
     } catch (err) {
-      console.error('Voice error:', err);
+      console.warn('Voice error:', err);
       setIsListening(false);
       setVoiceStatus('');
       const message = err?.message || 'Failed to start voice recognition';
       setVoiceError(message);
       Alert.alert('Voice error', message);
     }
-  }, [hasPro, onRequestUpgrade, voiceAvailable, isListening]);
+  }, [hasPro, onRequestUpgrade, voiceAvailable, isListening, ensureVoiceModule]);
 
   useEffect(() => {
-    if (!hasPro) return undefined;
+    if (!hasPro || !ensureVoiceModule()) {
+      setVoiceAvailable(false);
+      return undefined;
+    }
 
     Voice.onSpeechStart = () => {
       setIsListening(true);
@@ -890,7 +902,7 @@ export default function HomePage({
       }
     };
     Voice.onSpeechError = (event) => {
-      console.error('Speech error', event);
+      console.warn('Speech error', event);
       setIsListening(false);
       setVoiceStatus('');
       const message = event?.error?.message || 'Microphone error occurred';
@@ -900,21 +912,38 @@ export default function HomePage({
 
     (async () => {
       try {
-        await Voice?.requestPermissions?.();
-        const available = await Voice?.isAvailable?.();
-        if (typeof available === 'boolean') {
-          setVoiceAvailable(available);
+        if (typeof Voice.requestPermissions === 'function') {
+          await Voice.requestPermissions();
         }
       } catch (err) {
-        console.error('Voice availability error:', err);
+        console.warn('Voice permission error', err);
+      }
+
+      try {
+        if (typeof Voice.isAvailable === 'function') {
+          const available = await Voice.isAvailable();
+          setVoiceAvailable(Boolean(available));
+        } else {
+          setVoiceAvailable(false);
+        }
+      } catch (err) {
+        console.warn('Voice availability error:', err);
         setVoiceAvailable(false);
       }
     })();
 
     return () => {
-      Voice.destroy().then(Voice.removeAllListeners).catch(() => {});
+      if (typeof Voice.destroy === 'function') {
+        Voice.destroy()
+          .then(() => {
+            if (typeof Voice.removeAllListeners === 'function') {
+              Voice.removeAllListeners();
+            }
+          })
+          .catch(() => {});
+      }
     };
-  }, [hasPro, handleVoiceResult]);
+  }, [hasPro, handleVoiceResult, ensureVoiceModule]);
 
   const selectedCount = selectedTaskIds.length;
   const hasTasksToSelect = tasksToShow.length > 0;
@@ -1274,7 +1303,12 @@ export default function HomePage({
           </View>
         )}
 
-        <View style={homeStyles.taskList}>
+        <ScrollView
+          style={homeStyles.taskList}
+          contentContainerStyle={homeStyles.taskListContent}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
           {tasksToShow.length ? (
             tasksToShow.map((task) => (
               <TaskCard
@@ -1296,7 +1330,7 @@ export default function HomePage({
               Your list is clear—add a task to get started.
             </Text>
           )}
-        </View>
+        </ScrollView>
       </View>
 
       <CalendarModal
