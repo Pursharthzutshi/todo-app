@@ -337,6 +337,12 @@ function AppContent() {
     });
   }, []);
 
+  const requestUpgrade = useCallback((target = 'pro') => {
+    console.log('Upgrade requested for:', target);
+    setCurrentView('settings');
+    setShowMenu(false);
+  }, [setCurrentView, setShowMenu]);
+
   // Filter tasks based on activeFilter and search
   const dayCounts = useMemo(() => countTasksByDay(tasks), [tasks]);
 
@@ -563,6 +569,7 @@ function AppContent() {
     hasPro,
     setHasAdFree: updateAdFreeStatus,
     setHasPro: updateProStatus,
+    onRequestUpgrade: requestUpgrade,
     savedTodoTasks,
     selectedPriority,
     setSelectedPriority,

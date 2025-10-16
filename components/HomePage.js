@@ -138,10 +138,14 @@ export default function HomePage({
   fontScale = 1,
   currentView,
   setCurrentView,
+  hasPro,
+  onRequestUpgrade,
+  safeAreaInsets,
   styles: sharedStyles = {},
   setTheme,
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
+  const bottomInset = safeAreaInsets?.bottom ?? 0;
   const priorityDefault = useMemo(() => {
     const value = selectedPriority || 'None';
     return (
@@ -170,7 +174,7 @@ export default function HomePage({
         },
         content: {
           paddingHorizontal: 20,
-          paddingBottom: NAV_HEIGHT + 20,
+          paddingBottom: NAV_HEIGHT + bottomInset + 20,
           paddingTop: 20,
           gap: 18,
         },
@@ -420,7 +424,7 @@ export default function HomePage({
           textAlign: 'center',
         },
       }),
-    [palette, theme, NAV_HEIGHT, fontScale],
+    [palette, theme, NAV_HEIGHT, bottomInset, fontScale],
   );
 
   const selectedDayDetails = useMemo(() => {
@@ -500,6 +504,20 @@ export default function HomePage({
   const menuItems = useMemo(
     () => [
       {
+        key: 'upgrade',
+        label: hasPro ? 'Manage subscription' : 'Unlock Pro',
+        icon: 'workspace-premium',
+        action: () => {
+          if (typeof onRequestUpgrade === 'function') {
+            onRequestUpgrade(hasPro ? 'manage' : 'pro');
+          } else {
+            handleNavigate('settings');
+          }
+          setShowMenu(false);
+        },
+        isActive: false,
+      },
+      {
         key: 'progress',
         label: 'View progress',
         icon: 'insert-chart-outlined',
@@ -521,7 +539,7 @@ export default function HomePage({
         isActive: false,
       },
     ],
-    [currentView, theme, handleNavigate, handleToggleTheme],
+    [currentView, theme, hasPro, onRequestUpgrade, handleNavigate, handleToggleTheme, setShowMenu],
   );
 
   return (

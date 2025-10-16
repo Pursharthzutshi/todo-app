@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -149,6 +149,93 @@ const createThemedStyles = (palette, fontScale = 1) =>
       fontSize: 12 * fontScale,
       fontWeight: '600',
       letterSpacing: 0.4,
+    },
+    upgradeCard: {
+      backgroundColor: palette.card,
+      borderRadius: 24,
+      padding: 20,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: palette.subtleBorder,
+      shadowColor: 'rgba(15,23,42,0.16)',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
+      elevation: 6,
+    },
+    upgradeTitle: {
+      fontSize: 18 * fontScale,
+      fontWeight: '700',
+      color: palette.textPrimary,
+    },
+    upgradeSubtitle: {
+      marginTop: 6,
+      fontSize: 13 * fontScale,
+      lineHeight: 19 * fontScale,
+      color: palette.textSecondary,
+    },
+    upgradeButton: {
+      marginTop: 16,
+      borderRadius: 18,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1,
+      borderColor: palette.subtleBorder,
+    },
+    upgradeButtonPrimary: {
+      backgroundColor: palette.buttonBackground,
+      borderColor: palette.buttonBackground,
+    },
+    upgradeButtonSecondary: {
+      backgroundColor: palette.secondaryButton,
+      borderColor: palette.secondaryButton,
+    },
+    upgradeButtonDisabled: {
+      opacity: 0.7,
+    },
+    upgradeButtonTextGroup: {
+      flex: 1,
+      paddingRight: 12,
+    },
+    upgradeButtonLabel: {
+      fontSize: 15 * fontScale,
+      fontWeight: '700',
+      color: palette.textPrimary,
+    },
+    upgradeButtonLabelPrimary: {
+      color: palette.buttonText,
+    },
+    upgradeButtonCaption: {
+      marginTop: 4,
+      fontSize: 12 * fontScale,
+      color: palette.textSecondary,
+    },
+    upgradeButtonCaptionPrimary: {
+      color: palette.buttonText,
+      opacity: 0.85,
+    },
+    upgradeStatusRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 18,
+    },
+    upgradeStatusChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: palette.accentSoft,
+      borderRadius: 999,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+    },
+    upgradeStatusText: {
+      marginLeft: 6,
+      fontSize: 12 * fontScale,
+      fontWeight: '600',
+      color: palette.textSecondary,
     },
     sectionCard: {
       backgroundColor: palette.card,
@@ -340,6 +427,13 @@ export default function SettingsPage({
   fontSize: activeFontSize = 'Medium',
   setFontSize: updateFontSize,
   fontScale = 1,
+  NAV_HEIGHT,
+  safeAreaInsets,
+  hasAdFree = false,
+  hasPro = false,
+  setHasAdFree,
+  setHasPro,
+  onRequestUpgrade,
 }) {
   const [theme, setTheme] = useState(activeTheme);
   const [fontSize, setFontSize] = useState(activeFontSize);
@@ -450,6 +544,42 @@ export default function SettingsPage({
     }
   };
 
+  const handleAdFreePress = useCallback(() => {
+    if (hasAdFree) {
+      Alert.alert('Already unlocked', 'Lifetime ad-free access is active.');
+      return;
+    }
+    if (typeof onRequestUpgrade === 'function') {
+      onRequestUpgrade('adfree');
+    }
+    if (typeof setHasAdFree === 'function') {
+      setHasAdFree(true);
+    }
+    Alert.alert(
+      'Ad-free enabled',
+      'Ad-free access has been granted for testing. Integrate billing to handle real purchases.',
+    );
+  }, [hasAdFree, onRequestUpgrade, setHasAdFree]);
+
+  const handleProPress = useCallback(() => {
+    if (hasPro) {
+      Alert.alert('Subscription active', 'Pro features are already unlocked.');
+      return;
+    }
+    if (typeof onRequestUpgrade === 'function') {
+      onRequestUpgrade('pro');
+    }
+    if (typeof setHasPro === 'function') {
+      setHasPro(true);
+    }
+    Alert.alert(
+      'Pro unlocked',
+      'Pro access has been granted for testing. Replace this with billing integration.',
+    );
+  }, [hasPro, onRequestUpgrade, setHasPro]);
+
+  const bottomInset = safeAreaInsets?.bottom ?? 0;
+
   const palette = useMemo(
     () => (theme === 'Dark' ? DARK_PALETTE : LIGHT_PALETTE),
     [theme],
@@ -462,7 +592,10 @@ export default function SettingsPage({
   return (
     <ScrollView
       style={themedStyles.screen}
-      contentContainerStyle={themedStyles.content}
+      contentContainerStyle={[
+        themedStyles.content,
+        { paddingBottom: 36 + (NAV_HEIGHT || 0) + bottomInset },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={themedStyles.headerCard}>
@@ -473,8 +606,86 @@ export default function SettingsPage({
         <Text style={themedStyles.headerSubtitle}>
           Tailor Todo to match the way you plan, focus, and ship your day.
         </Text>
-        <View style={themedStyles.headerBadge}>
-          <Text style={themedStyles.headerBadgeText}>Personalize your experience</Text>
+      <View style={themedStyles.headerBadge}>
+        <Text style={themedStyles.headerBadgeText}>Personalize your experience</Text>
+      </View>
+    </View>
+
+      <View style={themedStyles.upgradeCard}>
+        <Text style={themedStyles.upgradeTitle}>Upgrade your workspace</Text>
+        <Text style={themedStyles.upgradeSubtitle}>
+          Remove ads forever or unlock every Pro tool with a monthly plan.
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            themedStyles.upgradeButton,
+            themedStyles.upgradeButtonSecondary,
+            hasAdFree && themedStyles.upgradeButtonDisabled,
+          ]}
+          onPress={handleAdFreePress}
+          activeOpacity={0.85}
+        >
+          <View style={themedStyles.upgradeButtonTextGroup}>
+            <Text style={themedStyles.upgradeButtonLabel}>Remove ads (lifetime)</Text>
+            <Text style={themedStyles.upgradeButtonCaption}>
+              One-time unlock. Yours forever on this account.
+            </Text>
+          </View>
+          <MaterialIcons
+            name={hasAdFree ? 'check-circle' : 'block'}
+            size={20}
+            color={hasAdFree ? palette.accent : palette.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            themedStyles.upgradeButton,
+            themedStyles.upgradeButtonPrimary,
+            hasPro && themedStyles.upgradeButtonDisabled,
+          ]}
+          onPress={handleProPress}
+          activeOpacity={0.9}
+        >
+          <View style={themedStyles.upgradeButtonTextGroup}>
+            <Text style={[themedStyles.upgradeButtonLabel, themedStyles.upgradeButtonLabelPrimary]}>
+              Go Pro (monthly)
+            </Text>
+            <Text
+              style={[themedStyles.upgradeButtonCaption, themedStyles.upgradeButtonCaptionPrimary]}
+            >
+              Unlock premium features and stay ad-free while subscribed.
+            </Text>
+          </View>
+          <MaterialIcons
+            name={hasPro ? 'workspace-premium' : 'arrow-forward'}
+            size={20}
+            color={palette.buttonText}
+          />
+        </TouchableOpacity>
+
+        <View style={themedStyles.upgradeStatusRow}>
+          <View style={themedStyles.upgradeStatusChip}>
+            <MaterialIcons
+              name={hasAdFree ? 'done' : 'lock-open'}
+              size={16}
+              color={hasAdFree ? palette.accent : palette.textSecondary}
+            />
+            <Text style={themedStyles.upgradeStatusText}>
+              {hasAdFree ? 'Ad-free active' : 'Ads currently enabled'}
+            </Text>
+          </View>
+          <View style={themedStyles.upgradeStatusChip}>
+            <MaterialIcons
+              name={hasPro ? 'workspace-premium' : 'star-outline'}
+              size={16}
+              color={hasPro ? palette.accent : palette.textSecondary}
+            />
+            <Text style={themedStyles.upgradeStatusText}>
+              {hasPro ? 'Pro subscription active' : 'Pro features locked'}
+            </Text>
+          </View>
         </View>
       </View>
 
