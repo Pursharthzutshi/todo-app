@@ -71,13 +71,139 @@ const HOME_THEMES = {
   },
 };
 
-const PRIORITY_OPTIONS = [
-  { key: '1', value: 'Urgent' },
-  { key: '2', value: 'High' },
-  { key: '3', value: 'Medium' },
-  { key: '4', value: 'Low' },
-  { key: '5', value: 'None' },
+const HOME_THEME_VARIANTS = {
+  Pastel: {
+    ...HOME_THEMES.Light,
+    screen: '#F8F5FF',
+    card: '#FFFFFF',
+    accent: '#8B5CF6',
+    accentSoft: 'rgba(139,92,246,0.16)',
+    cardBorder: 'rgba(139,92,246,0.18)',
+    cardShadow: 'rgba(139,92,246,0.22)',
+    textPrimary: '#2E1065',
+    textSecondary: '#6B21A8',
+    textMuted: '#9F67F8',
+    filterBackground: '#FFFFFF',
+    filterBorder: 'rgba(139,92,246,0.22)',
+    filterActive: 'rgba(139,92,246,0.18)',
+    filterActiveBorder: '#8B5CF6',
+    chipIcon: '#8B5CF6',
+    inputBackground: '#FFFFFF',
+    inputBorder: 'rgba(139,92,246,0.25)',
+    inputPlaceholder: '#7C3AED',
+    pillBackground: '#EDE9FE',
+    pillText: '#5B21B6',
+    metricSuccess: '#8B5CF6',
+    addButtonBackground: '#6D28D9',
+    addButtonText: '#F8FAFF',
+  },
+  Mint: {
+    ...HOME_THEMES.Light,
+    screen: '#F0FBF6',
+    accent: '#10B981',
+    accentSoft: 'rgba(16,185,129,0.18)',
+    cardBorder: 'rgba(16,185,129,0.18)',
+    cardShadow: 'rgba(16,185,129,0.18)',
+    textPrimary: '#064E3B',
+    textSecondary: '#047857',
+    textMuted: '#0D9488',
+    filterBorder: 'rgba(16,185,129,0.18)',
+    filterActive: 'rgba(16,185,129,0.14)',
+    filterActiveBorder: '#10B981',
+    chipIcon: '#0D9488',
+    inputBackground: '#FFFFFF',
+    inputBorder: 'rgba(16,185,129,0.22)',
+    inputPlaceholder: '#0F766E',
+    pillBackground: '#D1FAE5',
+    pillText: '#047857',
+    metricSuccess: '#34D399',
+    addButtonBackground: '#047857',
+    addButtonText: '#ECFDF5',
+  },
+  Sunset: {
+    ...HOME_THEMES.Light,
+    screen: '#FFF7ED',
+    accent: '#F97316',
+    accentSoft: 'rgba(249,115,22,0.18)',
+    cardBorder: 'rgba(249,115,22,0.22)',
+    cardShadow: 'rgba(249,115,22,0.22)',
+    textPrimary: '#7C2D12',
+    textSecondary: '#9A3412',
+    textMuted: '#FB923C',
+    filterBorder: 'rgba(249,115,22,0.18)',
+    filterActive: 'rgba(249,115,22,0.14)',
+    filterActiveBorder: '#F97316',
+    chipIcon: '#F97316',
+    inputBackground: '#FFFFFF',
+    inputBorder: 'rgba(249,115,22,0.22)',
+    inputPlaceholder: '#FB923C',
+    pillBackground: '#FFEDD5',
+    pillText: '#9A3412',
+    metricSuccess: '#F97316',
+    addButtonBackground: '#EA580C',
+    addButtonText: '#FFF7ED',
+  },
+  Pink: {
+    ...HOME_THEMES.Light,
+    screen: '#FFF5F7',
+    accent: '#EC4899',
+    accentSoft: 'rgba(236,72,153,0.18)',
+    cardBorder: 'rgba(236,72,153,0.2)',
+    cardShadow: 'rgba(236,72,153,0.2)',
+    textPrimary: '#831843',
+    textSecondary: '#BE185D',
+    textMuted: '#F472B6',
+    filterBorder: 'rgba(236,72,153,0.18)',
+    filterActive: 'rgba(236,72,153,0.14)',
+    filterActiveBorder: '#EC4899',
+    chipIcon: '#EC4899',
+    inputBackground: '#FFFFFF',
+    inputBorder: 'rgba(236,72,153,0.22)',
+    inputPlaceholder: '#F472B6',
+    pillBackground: '#FCE7F3',
+    pillText: '#BE185D',
+    metricSuccess: '#F472B6',
+    addButtonBackground: '#DB2777',
+    addButtonText: '#FFF5F7',
+  },
+  Ocean: {
+    ...HOME_THEMES.Dark,
+    screen: '#0F172A',
+    card: '#11243E',
+    accent: '#38BDF8',
+    accentSoft: 'rgba(56,189,248,0.24)',
+    cardBorder: 'rgba(56,189,248,0.22)',
+    cardShadow: 'rgba(56,189,248,0.28)',
+    textPrimary: '#E0F2FE',
+    textSecondary: '#93C5FD',
+    textMuted: '#38BDF8',
+    filterBackground: 'rgba(17,36,62,0.7)',
+    filterBorder: 'rgba(56,189,248,0.28)',
+    filterActive: 'rgba(56,189,248,0.28)',
+    filterActiveBorder: '#38BDF8',
+    chipIcon: '#38BDF8',
+    inputBackground: '#102A44',
+    inputBorder: 'rgba(56,189,248,0.28)',
+    inputPlaceholder: '#60A5FA',
+    pillBackground: 'rgba(56,189,248,0.18)',
+    pillText: '#1E3A8A',
+    metricSuccess: '#38BDF8',
+    addButtonBackground: '#1D4ED8',
+    addButtonText: '#E0F2FE',
+  },
+};
+
+Object.assign(HOME_THEMES, HOME_THEME_VARIANTS);
+
+const PRO_PRIORITY_OPTIONS = [
+  { key: 'normal', value: 'Normal' },
+  { key: 'low', value: 'Low' },
+  { key: 'medium', value: 'Medium' },
+  { key: 'high', value: 'High' },
+  { key: 'critical', value: 'Critical' },
 ];
+
+const FREE_PRIORITY_OPTIONS = [{ key: 'normal', value: 'Normal' }];
 
 const scaleFont = (value, multiplier) =>
   Math.round(value * multiplier * 100) / 100;
@@ -146,23 +272,28 @@ export default function HomePage({
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
   const bottomInset = safeAreaInsets?.bottom ?? 0;
+  const priorityOptions = useMemo(
+    () => (hasPro ? PRO_PRIORITY_OPTIONS : FREE_PRIORITY_OPTIONS),
+    [hasPro],
+  );
+
   const priorityDefault = useMemo(() => {
-    const value = selectedPriority || 'None';
+    const value = selectedPriority || 'Normal';
     return (
-      PRIORITY_OPTIONS.find((option) => option.value === value) ||
-      PRIORITY_OPTIONS[4]
+      priorityOptions.find((option) => option.value === value) ||
+      priorityOptions[0]
     );
-  }, [selectedPriority]);
+  }, [selectedPriority, priorityOptions]);
   const handlePrioritySelect = useCallback(
     (nextValue) => {
-      const match = PRIORITY_OPTIONS.find(
+      const match = priorityOptions.find(
         (option) =>
           option.value === nextValue ||
           String(option.key) === String(nextValue),
       );
       setSelectedPriority(match ? match.value : nextValue);
     },
-    [setSelectedPriority],
+    [priorityOptions, setSelectedPriority],
   );
 
   const homeStyles = useMemo(
@@ -187,7 +318,7 @@ export default function HomePage({
           borderColor: palette.cardBorder,
           shadowColor: palette.cardShadow,
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: theme === 'Dark' ? 0.22 : 0.12,
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.22 : 0.12,
           shadowRadius: 20,
           elevation: 7,
         },
@@ -253,7 +384,7 @@ export default function HomePage({
           borderColor: palette.cardBorder,
           shadowColor: palette.cardShadow,
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: theme === 'Dark' ? 0.25 : 0.12,
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.25 : 0.12,
           shadowRadius: 16,
           elevation: 6,
           overflow: 'hidden',
@@ -321,7 +452,7 @@ export default function HomePage({
           borderColor: palette.cardBorder,
           shadowColor: palette.cardShadow,
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: theme === 'Dark' ? 0.22 : 0.12,
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.22 : 0.12,
           shadowRadius: 20,
           elevation: 6,
         },
@@ -361,6 +492,11 @@ export default function HomePage({
         },
         selectListWrapper: {
           marginTop: 12,
+        },
+        proFeatureHint: {
+          marginTop: 6,
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
         },
         dueDateButton: {
           marginTop: 12,
@@ -641,9 +777,9 @@ export default function HomePage({
         <View style={homeStyles.selectListWrapper}>
           <SelectList
             setSelected={handlePrioritySelect}
-            data={PRIORITY_OPTIONS}
+            data={priorityOptions}
             save="value"
-            placeholder="Priority"
+            placeholder={hasPro ? 'Priority' : 'Priority (Pro)'}
             defaultOption={priorityDefault}
             search={false}
             boxStyles={{
@@ -665,6 +801,11 @@ export default function HomePage({
               fontSize: scaleFont(14, fontScale),
             }}
           />
+          {!hasPro && (
+            <Text style={homeStyles.proFeatureHint}>
+              Priority levels beyond Normal are part of Pro.
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity

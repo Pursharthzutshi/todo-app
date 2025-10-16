@@ -30,6 +30,79 @@ const DAYS = DAY_NAMES.map((fullName, id) => ({
   fullName,
 }));
 
+const THEME_COLOR_MAP = {
+  Light: {
+    backgroundColor: '#ffffff',
+    textColor: '#000000',
+    cardBackground: '#fafafa',
+    borderColor: '#e0e0e0',
+    accentColor: '#6200ee',
+    secondaryTextColor: '#757575',
+    buttonBackground: '#f5f5f5',
+    inputBackground: '#ffffff',
+  },
+  Dark: {
+    backgroundColor: '#121212',
+    textColor: '#ffffff',
+    cardBackground: '#1e1e1e',
+    borderColor: '#444444',
+    accentColor: '#bb86fc',
+    secondaryTextColor: '#e0e0e0',
+    buttonBackground: '#333333',
+    inputBackground: '#2a2a2a',
+  },
+  Pastel: {
+    backgroundColor: '#F8F5FF',
+    textColor: '#2E1065',
+    cardBackground: '#FFFFFF',
+    borderColor: '#E9D5FF',
+    accentColor: '#8B5CF6',
+    secondaryTextColor: '#6D28D9',
+    buttonBackground: '#EDE9FE',
+    inputBackground: '#FFFFFF',
+  },
+  Mint: {
+    backgroundColor: '#F0FBF6',
+    textColor: '#064E3B',
+    cardBackground: '#FFFFFF',
+    borderColor: '#BBF7D0',
+    accentColor: '#10B981',
+    secondaryTextColor: '#047857',
+    buttonBackground: '#D1FAE5',
+    inputBackground: '#FFFFFF',
+  },
+  Ocean: {
+    backgroundColor: '#0F172A',
+    textColor: '#E0F2FE',
+    cardBackground: '#11243E',
+    borderColor: '#1E3A5F',
+    accentColor: '#38BDF8',
+    secondaryTextColor: '#93C5FD',
+    buttonBackground: '#1E40AF',
+    inputBackground: '#102338',
+  },
+  Sunset: {
+    backgroundColor: '#FFF7ED',
+    textColor: '#7C2D12',
+    cardBackground: '#FFFFFF',
+    borderColor: '#FED7AA',
+    accentColor: '#F97316',
+    secondaryTextColor: '#9A3412',
+    buttonBackground: '#FFEDD5',
+    inputBackground: '#FFFFFF',
+  },
+  Pink: {
+    backgroundColor: '#FFF5F7',
+    textColor: '#831843',
+    cardBackground: '#FFFFFF',
+    borderColor: '#FBCFE8',
+    accentColor: '#EC4899',
+    secondaryTextColor: '#BE185D',
+    buttonBackground: '#FCE7F3',
+    inputBackground: '#FFFFFF',
+  },
+};
+
 const startOfDay = (value) => {
   if (!value && value !== 0) return null;
   const date = value instanceof Date ? new Date(value) : new Date(value);
@@ -103,6 +176,19 @@ const normalizeTask = (task) => {
     wishlist: false,
     ...task,
   };
+  if (!normalized.priority) {
+    normalized.priority = 'Normal';
+  }
+  const legacyPriorityMap = {
+    Urgent: 'Critical',
+    High: 'High',
+    Medium: 'Medium',
+    Low: 'Low',
+    None: 'Normal',
+  };
+  if (legacyPriorityMap[normalized.priority]) {
+    normalized.priority = legacyPriorityMap[normalized.priority];
+  }
 
   const dueDate = getTaskDueDate(normalized);
   const createdDate = normalized.createdAt ? startOfDay(normalized.createdAt) : null;
@@ -159,6 +245,7 @@ const DEFAULT_TASKS = (() => {
       completed: false,
       important: false,
       wishlist: false,
+      priority: 'Normal',
       dueDateISO: toISODate(today),
       time: '10:00',
     },
@@ -168,6 +255,7 @@ const DEFAULT_TASKS = (() => {
       completed: true,
       important: true,
       wishlist: false,
+      priority: 'Normal',
       dueDateISO: toISODate(addDays(today, -1)),
     },
     {
@@ -176,6 +264,7 @@ const DEFAULT_TASKS = (() => {
       completed: false,
       important: true,
       wishlist: false,
+      priority: 'Normal',
       dueDateISO: toISODate(addDays(today, 2)),
     },
   ].map(normalizeTask);
@@ -194,7 +283,7 @@ function AppContent() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [newTask, setNewTask] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState('Normal');
   const [searchAllTodoListItem, setSearchAllTodoListItem] = useState('');
   const [selectedDueDateKey, setSelectedDueDateKey] = useState('none');
   const [tasks, setTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
@@ -204,6 +293,28 @@ function AppContent() {
   const insets = typeof useSafeAreaInsets === 'function'
     ? useSafeAreaInsets()
     : { top: 0, bottom: 0, left: 0, right: 0 };
+  useEffect(() => {
+    if (!hasPro) {
+      const allowedThemes = ['Light', 'Dark'];
+      if (!allowedThemes.includes(theme)) {
+        setTheme('Light');
+        AsyncStorage.setItem('theme', 'Light').catch((err) => {
+          console.error('Failed to reset theme for free tier', err);
+        });
+      }
+      if (fontSize !== 'Medium') {
+        setFontSize('Medium');
+        AsyncStorage.setItem('fontSize', 'Medium').catch((err) => {
+          console.error('Failed to reset font size for free tier', err);
+        });
+      }
+    }
+  }, [hasPro, theme, fontSize]);
+  useEffect(() => {
+    if (!hasPro) {
+      setSelectedPriority('Normal');
+    }
+  }, [hasPro]);
   const selectedDueDateLabel = useMemo(() => {
     if (!selectedDueDateKey || selectedDueDateKey === 'none') return 'No due date';
     const date = startOfDay(selectedDueDateKey);
@@ -247,7 +358,11 @@ function AppContent() {
 
         const rawPro = stored[STORAGE_KEYS.pro];
         if (rawPro !== undefined && rawPro !== null) {
-          setHasPro(rawPro === 'true');
+          const proActive = rawPro === 'true';
+          setHasPro(proActive);
+          if (proActive) {
+            setHasAdFree(true);
+          }
         }
 
         const savedTheme = stored.theme;
@@ -335,7 +450,10 @@ function AppContent() {
     AsyncStorage.setItem(STORAGE_KEYS.pro, normalized ? 'true' : 'false').catch((err) => {
       console.error('Failed to persist pro status', err);
     });
-  }, []);
+    if (normalized) {
+      updateAdFreeStatus(true);
+    }
+  }, [updateAdFreeStatus]);
 
   const requestUpgrade = useCallback((target = 'pro') => {
     console.log('Upgrade requested for:', target);
@@ -403,26 +521,9 @@ function AppContent() {
     console.log('Applying font size:', fontSize);
     console.log('Font size multiplier:', fontSizeMultiplier, 'for fontSize:', fontSize);
     
-    // Apply theme adjustments with improved dark theme colors
-    const themeColors = theme === 'Dark' ? {
-      backgroundColor: '#121212',
-      textColor: '#ffffff',
-      cardBackground: '#1e1e1e',
-      borderColor: '#444444',
-      accentColor: '#bb86fc',
-      secondaryTextColor: '#e0e0e0',
-      buttonBackground: '#333333',
-      inputBackground: '#2a2a2a'
-    } : {
-      backgroundColor: '#ffffff',
-      textColor: '#000000',
-      cardBackground: '#fafafa',
-      borderColor: '#e0e0e0',
-      accentColor: '#6200ee',
-      secondaryTextColor: '#757575',
-      buttonBackground: '#f5f5f5',
-      inputBackground: '#ffffff'
-    };
+    // Apply theme adjustments
+    const themeColors = THEME_COLOR_MAP[theme] || THEME_COLOR_MAP.Light;
+    const isDarkTheme = theme === 'Dark' || theme === 'Ocean';
     
     return {
       ...baseStyles,
@@ -444,17 +545,17 @@ function AppContent() {
         ...baseStyles.taskTitle, 
         fontSize: 16 * fontSizeMultiplier,
         color: themeColors.textColor,
-        fontWeight: theme === 'Dark' ? '600' : '500'
+        fontWeight: isDarkTheme ? '600' : '500'
       },
       settingLabel: {
         fontSize: 18 * fontSizeMultiplier,
         marginBottom: 10,
         color: themeColors.textColor,
-        fontWeight: theme === 'Dark' ? '600' : '500'
+        fontWeight: isDarkTheme ? '600' : '500'
       },
       settingValue: {
         fontSize: 16 * fontSizeMultiplier,
-        color: theme === 'Dark' ? themeColors.accentColor : themeColors.textColor,
+        color: isDarkTheme ? themeColors.accentColor : themeColors.textColor,
         padding: 12,
         backgroundColor: themeColors.inputBackground,
         borderRadius: 4,
@@ -507,29 +608,8 @@ function AppContent() {
     return 1;
   }
   
-  // Define theme colors
-  const themeColors = {
-    Light: {
-      backgroundColor: '#ffffff',
-      textColor: '#000000',
-      cardBackground: '#fafafa',
-      borderColor: '#e0e0e0',
-      accentColor: '#6200ee',
-      secondaryTextColor: '#757575',
-      buttonBackground: '#f5f5f5',
-      inputBackground: '#ffffff'
-    },
-    Dark: {
-      backgroundColor: '#121212',
-      textColor: '#ffffff',
-      cardBackground: '#1e1e1e',
-      borderColor: '#444444',
-      accentColor: '#bb86fc',
-      secondaryTextColor: '#e0e0e0',
-      buttonBackground: '#333333',
-      inputBackground: '#2a2a2a'
-    }
-  };
+  // Expose theme color map for downstream components
+  const themeColors = THEME_COLOR_MAP;
 
   // Common props shared across all pages
   const commonProps = {
@@ -609,9 +689,9 @@ function AppContent() {
     }
   }
 
-  const statusBarStyle = theme === 'Dark' ? 'light-content' : 'dark-content';
-  const statusBarBackground =
-    theme === 'Dark' ? '#0B1120' : '#ffffff';
+  const currentPalette = THEME_COLOR_MAP[theme] || THEME_COLOR_MAP.Light;
+  const statusBarStyle = (theme === 'Dark' || theme === 'Ocean') ? 'light-content' : 'dark-content';
+  const statusBarBackground = currentPalette.backgroundColor;
 
   return (
     <>

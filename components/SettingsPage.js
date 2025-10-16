@@ -56,7 +56,127 @@ const DARK_PALETTE = {
   secondaryButtonText: '#E0E7FF',
 };
 
-const themeChoices = [
+const PASTEL_PALETTE = {
+  background: '#F8F5FF',
+  card: '#FFFFFF',
+  elevated: '#F3EDFF',
+  border: 'rgba(139,92,246,0.25)',
+  subtleBorder: 'rgba(139,92,246,0.18)',
+  textPrimary: '#2E1065',
+  textSecondary: '#6B21A8',
+  accent: '#8B5CF6',
+  accentSoft: 'rgba(139,92,246,0.16)',
+  badgeSurface: '#EDE9FE',
+  pillText: '#6B21A8',
+  pillTextActive: '#312E81',
+  inputBackground: '#FFFFFF',
+  inputBorder: 'rgba(139,92,246,0.28)',
+  buttonBackground: '#6D28D9',
+  buttonText: '#F8FAFF',
+  placeholder: '#7C3AED',
+  secondaryButton: '#EDE9FE',
+  secondaryButtonText: '#5B21B6',
+};
+
+const MINT_PALETTE = {
+  background: '#F0FBF6',
+  card: '#FFFFFF',
+  elevated: '#E8FDF3',
+  border: 'rgba(16,185,129,0.22)',
+  subtleBorder: 'rgba(16,185,129,0.16)',
+  textPrimary: '#064E3B',
+  textSecondary: '#047857',
+  accent: '#10B981',
+  accentSoft: 'rgba(16,185,129,0.16)',
+  badgeSurface: '#D1FAE5',
+  pillText: '#047857',
+  pillTextActive: '#115E59',
+  inputBackground: '#FFFFFF',
+  inputBorder: 'rgba(16,185,129,0.26)',
+  buttonBackground: '#059669',
+  buttonText: '#ECFDF5',
+  placeholder: '#0F766E',
+  secondaryButton: '#D1FAE5',
+  secondaryButtonText: '#047857',
+};
+
+const OCEAN_PALETTE = {
+  background: '#0F172A',
+  card: '#11243E',
+  elevated: '#152C4D',
+  border: 'rgba(56,189,248,0.28)',
+  subtleBorder: 'rgba(30,64,175,0.4)',
+  textPrimary: '#E0F2FE',
+  textSecondary: '#93C5FD',
+  accent: '#38BDF8',
+  accentSoft: 'rgba(56,189,248,0.18)',
+  badgeSurface: 'rgba(56,189,248,0.18)',
+  pillText: '#BFDBFE',
+  pillTextActive: '#2563EB',
+  inputBackground: '#102A44',
+  inputBorder: 'rgba(56,189,248,0.3)',
+  buttonBackground: '#1E40AF',
+  buttonText: '#E0F2FE',
+  placeholder: '#60A5FA',
+  secondaryButton: 'rgba(56,189,248,0.18)',
+  secondaryButtonText: '#BAE6FD',
+};
+
+const SUNSET_PALETTE = {
+  background: '#FFF7ED',
+  card: '#FFFFFF',
+  elevated: '#FFF3E0',
+  border: 'rgba(249,115,22,0.24)',
+  subtleBorder: 'rgba(250,204,21,0.2)',
+  textPrimary: '#7C2D12',
+  textSecondary: '#9A3412',
+  accent: '#F97316',
+  accentSoft: 'rgba(249,115,22,0.16)',
+  badgeSurface: '#FFEDD5',
+  pillText: '#9A3412',
+  pillTextActive: '#C2410C',
+  inputBackground: '#FFFFFF',
+  inputBorder: 'rgba(249,115,22,0.24)',
+  buttonBackground: '#EA580C',
+  buttonText: '#FFF7ED',
+  placeholder: '#F97316',
+  secondaryButton: '#FFEDD5',
+  secondaryButtonText: '#9A3412',
+};
+
+const PINK_PALETTE = {
+  background: '#FFF5F7',
+  card: '#FFFFFF',
+  elevated: '#FFE4EC',
+  border: 'rgba(236,72,153,0.24)',
+  subtleBorder: 'rgba(244,114,182,0.2)',
+  textPrimary: '#831843',
+  textSecondary: '#BE185D',
+  accent: '#EC4899',
+  accentSoft: 'rgba(236,72,153,0.16)',
+  badgeSurface: '#FCE7F3',
+  pillText: '#BE185D',
+  pillTextActive: '#9D174D',
+  inputBackground: '#FFFFFF',
+  inputBorder: 'rgba(236,72,153,0.24)',
+  buttonBackground: '#DB2777',
+  buttonText: '#FFF5F7',
+  placeholder: '#F472B6',
+  secondaryButton: '#FCE7F3',
+  secondaryButtonText: '#BE185D',
+};
+
+const THEME_PALETTES = {
+  Light: LIGHT_PALETTE,
+  Dark: DARK_PALETTE,
+  Pastel: PASTEL_PALETTE,
+  Mint: MINT_PALETTE,
+  Ocean: OCEAN_PALETTE,
+  Sunset: SUNSET_PALETTE,
+  Pink: PINK_PALETTE,
+};
+
+const BASE_THEME_CHOICES = [
   {
     value: 'Light',
     title: 'Light',
@@ -68,6 +188,40 @@ const themeChoices = [
     title: 'Dark',
     caption: 'Calm & focused',
     icon: 'nightlight-round',
+  },
+];
+
+const PRO_THEME_CHOICES = [
+  ...BASE_THEME_CHOICES,
+  {
+    value: 'Pastel',
+    title: 'Pastel',
+    caption: 'Soft lavender glow',
+    icon: 'palette',
+  },
+  {
+    value: 'Mint',
+    title: 'Mint',
+    caption: 'Fresh & calm',
+    icon: 'palette',
+  },
+  {
+    value: 'Ocean',
+    title: 'Ocean',
+    caption: 'Deep focus blues',
+    icon: 'waves',
+  },
+  {
+    value: 'Sunset',
+    title: 'Sunset',
+    caption: 'Warm evening hues',
+    icon: 'wb-sunny',
+  },
+  {
+    value: 'Pink',
+    title: 'Pink',
+    caption: 'Playful energy',
+    icon: 'favorite',
   },
 ];
 
@@ -310,6 +464,9 @@ const createThemedStyles = (palette, fontScale = 1) =>
       borderColor: palette.accent,
       backgroundColor: palette.accentSoft,
     },
+    optionPillDisabled: {
+      opacity: 0.55,
+    },
     optionIcon: {
       width: 30,
       height: 30,
@@ -346,6 +503,12 @@ const createThemedStyles = (palette, fontScale = 1) =>
       fontSize: 13 * fontScale,
       marginTop: 8,
       lineHeight: 20 * fontScale,
+    },
+    proHint: {
+      color: palette.textSecondary,
+      fontSize: 12 * fontScale,
+      marginTop: 8,
+      fontStyle: 'italic',
     },
     textArea: {
       backgroundColor: palette.inputBackground,
@@ -530,8 +693,17 @@ export default function SettingsPage({
     if (type === 'theme' && value !== theme) {
       saveSettings('theme', value);
     }
-    if (type === 'fontSize' && value !== fontSize) {
-      saveSettings('fontSize', value);
+    if (type === 'fontSize') {
+      if (!hasPro) {
+        if (typeof onRequestUpgrade === 'function') {
+          onRequestUpgrade('pro');
+        }
+        Alert.alert('Pro required', 'Upgrade to Pro to adjust font size.');
+        return;
+      }
+      if (value !== fontSize) {
+        saveSettings('fontSize', value);
+      }
     }
   };
 
@@ -563,7 +735,10 @@ export default function SettingsPage({
 
   const handleProPress = useCallback(() => {
     if (hasPro) {
-      Alert.alert('Subscription active', 'Pro features are already unlocked.');
+      if (typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('manage');
+      }
+      Alert.alert('Subscription active', 'Manage your plan through the store settings.');
       return;
     }
     if (typeof onRequestUpgrade === 'function') {
@@ -581,13 +756,26 @@ export default function SettingsPage({
   const bottomInset = safeAreaInsets?.bottom ?? 0;
 
   const palette = useMemo(
-    () => (theme === 'Dark' ? DARK_PALETTE : LIGHT_PALETTE),
+    () => THEME_PALETTES[theme] || LIGHT_PALETTE,
     [theme],
   );
   const themedStyles = useMemo(
     () => createThemedStyles(palette, fontScale || 1),
     [palette, fontScale],
   );
+
+  const availableThemeChoices = useMemo(
+    () => (hasPro ? PRO_THEME_CHOICES : BASE_THEME_CHOICES),
+    [hasPro],
+  );
+
+  const adFreeCaption = hasAdFree
+    ? 'Ad-free access is active on this device.'
+    : 'One-time unlock. Yours forever on this account.';
+  const proButtonTitle = hasPro ? 'Manage Pro subscription' : 'Go Pro (monthly)';
+  const proButtonCaption = hasPro
+    ? 'All premium features are unlocked while your plan stays active.'
+    : 'Unlock premium features and stay ad-free while subscribed.';
 
   return (
     <ScrollView
@@ -625,12 +813,11 @@ export default function SettingsPage({
           ]}
           onPress={handleAdFreePress}
           activeOpacity={0.85}
+          disabled={hasAdFree}
         >
           <View style={themedStyles.upgradeButtonTextGroup}>
             <Text style={themedStyles.upgradeButtonLabel}>Remove ads (lifetime)</Text>
-            <Text style={themedStyles.upgradeButtonCaption}>
-              One-time unlock. Yours forever on this account.
-            </Text>
+            <Text style={themedStyles.upgradeButtonCaption}>{adFreeCaption}</Text>
           </View>
           <MaterialIcons
             name={hasAdFree ? 'check-circle' : 'block'}
@@ -643,19 +830,18 @@ export default function SettingsPage({
           style={[
             themedStyles.upgradeButton,
             themedStyles.upgradeButtonPrimary,
-            hasPro && themedStyles.upgradeButtonDisabled,
           ]}
           onPress={handleProPress}
           activeOpacity={0.9}
         >
           <View style={themedStyles.upgradeButtonTextGroup}>
             <Text style={[themedStyles.upgradeButtonLabel, themedStyles.upgradeButtonLabelPrimary]}>
-              Go Pro (monthly)
+              {proButtonTitle}
             </Text>
             <Text
               style={[themedStyles.upgradeButtonCaption, themedStyles.upgradeButtonCaptionPrimary]}
             >
-              Unlock premium features and stay ad-free while subscribed.
+              {proButtonCaption}
             </Text>
           </View>
           <MaterialIcons
@@ -704,7 +890,7 @@ export default function SettingsPage({
 
         <Text style={themedStyles.inputLabel}>{content.theme}</Text>
         <View style={themedStyles.pillGroup}>
-          {themeChoices.map((option) => {
+          {availableThemeChoices.map((option) => {
             const selected = theme === option.value;
             return (
               <TouchableOpacity
@@ -746,6 +932,11 @@ export default function SettingsPage({
         <Text style={themedStyles.helperText}>
           Choose the mood that keeps you feeling clear and focused.
         </Text>
+        {!hasPro && (
+          <Text style={themedStyles.proHint}>
+            Unlock additional color themes with Todo Pro.
+          </Text>
+        )}
 
         <Text
           style={[themedStyles.inputLabel, themedStyles.inputLabelSpacing]}
@@ -755,15 +946,18 @@ export default function SettingsPage({
         <View style={themedStyles.pillGroup}>
           {fontChoices.map((option) => {
             const selected = fontSize === option.value;
+            const locked = !hasPro;
             return (
               <TouchableOpacity
                 key={option.value}
                 style={[
                   themedStyles.optionPill,
                   selected && themedStyles.optionPillActive,
+                  locked && themedStyles.optionPillDisabled,
                 ]}
                 onPress={() => handleSelect('fontSize', option.value)}
-                activeOpacity={0.9}
+                activeOpacity={locked ? 1 : 0.9}
+                disabled={locked}
               >
                 <View
                   style={[

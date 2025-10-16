@@ -43,12 +43,105 @@ const CARD_THEMES = {
   },
 };
 
+const CARD_THEME_VARIANTS = {
+  Pastel: {
+    ...CARD_THEMES.Light,
+    background: '#FFFFFF',
+    border: 'rgba(139,92,246,0.18)',
+    shadow: 'rgba(139,92,246,0.2)',
+    textPrimary: '#2E1065',
+    textSecondary: '#6B21A8',
+    textMuted: '#9F67F8',
+    accent: '#8B5CF6',
+    checkboxBorder: '#C4B5FD',
+    badgeBackground: '#EDE9FE',
+    badgeText: '#5B21B6',
+    subtleChip: '#F5F3FF',
+    iconColor: '#7C3AED',
+    iconActive: '#8B5CF6',
+    delete: '#DB2777',
+  },
+  Mint: {
+    ...CARD_THEMES.Light,
+    background: '#FFFFFF',
+    border: 'rgba(16,185,129,0.18)',
+    shadow: 'rgba(16,185,129,0.2)',
+    textPrimary: '#064E3B',
+    textSecondary: '#047857',
+    textMuted: '#0D9488',
+    accent: '#10B981',
+    checkboxBorder: '#A7F3D0',
+    badgeBackground: '#D1FAE5',
+    badgeText: '#047857',
+    subtleChip: '#ECFDF5',
+    iconColor: '#0F766E',
+    iconActive: '#10B981',
+    delete: '#DC2626',
+  },
+  Sunset: {
+    ...CARD_THEMES.Light,
+    background: '#FFFFFF',
+    border: 'rgba(249,115,22,0.18)',
+    shadow: 'rgba(249,115,22,0.2)',
+    textPrimary: '#7C2D12',
+    textSecondary: '#9A3412',
+    textMuted: '#FB923C',
+    accent: '#F97316',
+    checkboxBorder: '#FDBA74',
+    badgeBackground: '#FFEDD5',
+    badgeText: '#9A3412',
+    subtleChip: '#FFF7ED',
+    iconColor: '#EA580C',
+    iconActive: '#F97316',
+    delete: '#B91C1C',
+  },
+  Pink: {
+    ...CARD_THEMES.Light,
+    background: '#FFFFFF',
+    border: 'rgba(236,72,153,0.18)',
+    shadow: 'rgba(236,72,153,0.2)',
+    textPrimary: '#831843',
+    textSecondary: '#BE185D',
+    textMuted: '#F472B6',
+    accent: '#EC4899',
+    checkboxBorder: '#FBCFE8',
+    badgeBackground: '#FCE7F3',
+    badgeText: '#BE185D',
+    subtleChip: '#FFF5F7',
+    iconColor: '#EC4899',
+    iconActive: '#DB2777',
+    delete: '#DB2777',
+  },
+  Ocean: {
+    ...CARD_THEMES.Dark,
+    background: '#11243E',
+    border: 'rgba(56,189,248,0.26)',
+    shadow: 'rgba(15,118,215,0.35)',
+    textPrimary: '#E0F2FE',
+    textSecondary: '#93C5FD',
+    textMuted: '#60A5FA',
+    accent: '#38BDF8',
+    checkboxBorder: '#38BDF8',
+    checkboxBackground: '#0F172A',
+    checkboxChecked: '#38BDF8',
+    checkboxCheckmark: '#0B1120',
+    badgeBackground: 'rgba(56,189,248,0.18)',
+    badgeText: '#BAE6FD',
+    subtleChip: 'rgba(30,58,138,0.45)',
+    iconColor: '#60A5FA',
+    iconActive: '#38BDF8',
+    delete: '#FCA5A5',
+  },
+};
+
+Object.assign(CARD_THEMES, CARD_THEME_VARIANTS);
+
 const PRIORITY_COLORS = {
-  Urgent: { bg: 'rgba(248,113,113,0.16)', text: '#B91C1C' },
-  High: { bg: 'rgba(249,115,22,0.16)', text: '#B45309' },
-  Medium: { bg: 'rgba(234,179,8,0.16)', text: '#854D0E' },
-  Low: { bg: 'rgba(59,130,246,0.16)', text: '#1D4ED8' },
-  None: { bg: 'rgba(148,163,184,0.18)', text: '#475467' },
+  Normal: { bg: 'rgba(148,163,184,0.18)', text: '#475467' },
+  Low: { bg: 'rgba(59,130,246,0.18)', text: '#1D4ED8' },
+  Medium: { bg: 'rgba(234,179,8,0.18)', text: '#854D0E' },
+  High: { bg: 'rgba(249,115,22,0.2)', text: '#B45309' },
+  Critical: { bg: 'rgba(248,113,113,0.22)', text: '#B91C1C' },
 };
 
 const scaleFont = (value, multiplier) =>
@@ -80,9 +173,9 @@ export default function TaskCard({
     return parts.filter(Boolean).join(' · ');
   }, [task.completed, task.dueDateLabel, task.time]);
 
-  const priorityValue = task.priority || 'None';
+  const priorityValue = task.priority || 'Normal';
   const cardStyles = useMemo(() => {
-    const priorityColors = PRIORITY_COLORS[priorityValue] || PRIORITY_COLORS.None;
+    const priorityColors = PRIORITY_COLORS[priorityValue] || PRIORITY_COLORS.Normal;
 
     return StyleSheet.create({
         container: {
@@ -96,7 +189,7 @@ export default function TaskCard({
           borderColor: palette.border,
           shadowColor: palette.shadow,
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: theme === 'Dark' ? 0.35 : 0.12,
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.35 : 0.12,
           shadowRadius: 18,
           elevation: 5,
         },

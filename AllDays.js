@@ -28,6 +28,76 @@ const DAY_THEMES = {
   },
 };
 
+const DAY_THEME_VARIANTS = {
+  Pastel: {
+    ...DAY_THEMES.Light,
+    background: '#F8F5FF',
+    border: '#E9D5FF',
+    activeBorder: '#8B5CF6',
+    activeBackground: '#EDE9FE',
+    text: '#5B21B6',
+    textActive: '#4C1D95',
+    badgeBackground: '#EDE9FE',
+    badgeText: '#5B21B6',
+    badgeBackgroundActive: '#8B5CF6',
+    badgeTextActive: '#F8F5FF',
+  },
+  Mint: {
+    ...DAY_THEMES.Light,
+    background: '#F0FBF6',
+    border: '#BBF7D0',
+    activeBorder: '#10B981',
+    activeBackground: '#D1FAE5',
+    text: '#047857',
+    textActive: '#064E3B',
+    badgeBackground: '#D1FAE5',
+    badgeText: '#047857',
+    badgeBackgroundActive: '#10B981',
+    badgeTextActive: '#ECFDF5',
+  },
+  Sunset: {
+    ...DAY_THEMES.Light,
+    background: '#FFF7ED',
+    border: '#FED7AA',
+    activeBorder: '#F97316',
+    activeBackground: '#FFEDD5',
+    text: '#9A3412',
+    textActive: '#7C2D12',
+    badgeBackground: '#FFEDD5',
+    badgeText: '#9A3412',
+    badgeBackgroundActive: '#F97316',
+    badgeTextActive: '#FFF7ED',
+  },
+  Pink: {
+    ...DAY_THEMES.Light,
+    background: '#FFF5F7',
+    border: '#FBCFE8',
+    activeBorder: '#EC4899',
+    activeBackground: '#FCE7F3',
+    text: '#BE185D',
+    textActive: '#831843',
+    badgeBackground: '#FCE7F3',
+    badgeText: '#BE185D',
+    badgeBackgroundActive: '#EC4899',
+    badgeTextActive: '#FFF5F7',
+  },
+  Ocean: {
+    ...DAY_THEMES.Dark,
+    background: '#10243E',
+    border: 'rgba(56,189,248,0.32)',
+    activeBorder: '#38BDF8',
+    activeBackground: 'rgba(56,189,248,0.22)',
+    text: '#BAE6FD',
+    textActive: '#E0F2FE',
+    badgeBackground: 'rgba(56,189,248,0.25)',
+    badgeText: '#BAE6FD',
+    badgeBackgroundActive: '#38BDF8',
+    badgeTextActive: '#0B1120',
+  },
+};
+
+Object.assign(DAY_THEMES, DAY_THEME_VARIANTS);
+
 const scaleFont = (value, multiplier) =>
   Math.round(value * multiplier * 100) / 100;
 
