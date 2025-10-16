@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -128,6 +128,10 @@ export default function HomePage({
   dayCounts = {},
   theme = 'Light',
   fontScale = 1,
+  currentView,
+  setCurrentView,
+  styles: sharedStyles = {},
+  setTheme,
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
   const priorityOptions = [
@@ -215,6 +219,49 @@ export default function HomePage({
           color: palette.pillText,
           fontSize: scaleFont(12, fontScale),
           fontWeight: '600',
+        },
+        menuWrapper: {
+          position: 'relative',
+        },
+        menuContainer: {
+          position: 'absolute',
+          top: 54,
+          right: 0,
+          width: 220,
+          borderRadius: 16,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: theme === 'Dark' ? 0.25 : 0.12,
+          shadowRadius: 16,
+          elevation: 6,
+          overflow: 'hidden',
+          zIndex: 20,
+        },
+        menuItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          backgroundColor: 'transparent',
+        },
+        menuItemActive: {
+          backgroundColor: palette.accentSoft,
+        },
+        menuItemIcon: {
+          marginRight: 12,
+        },
+        menuItemText: {
+          fontSize: scaleFont(14, fontScale),
+          color: palette.textPrimary,
+          fontWeight: '600',
+        },
+        menuDivider: {
+          height: StyleSheet.hairlineWidth,
+          backgroundColor: palette.filterBorder,
+          marginHorizontal: 12,
         },
         filterGroup: {
           flexDirection: 'row',
@@ -415,6 +462,53 @@ export default function HomePage({
   const plannedTasks = savedTodoTasks.filter((task) => task.dueDateISO).length;
   const todayTasks = savedTodoTasks.filter(isDueToday).length;
 
+  const handleNavigate = useCallback(
+    (view) => {
+      if (typeof setCurrentView === 'function' && view) {
+        setCurrentView(view);
+      }
+      setShowMenu(false);
+    },
+    [setCurrentView, setShowMenu],
+  );
+
+  const handleToggleTheme = useCallback(() => {
+    const nextTheme = theme === 'Light' ? 'Dark' : 'Light';
+    if (sharedStyles?.onThemeChange) {
+      sharedStyles.onThemeChange(nextTheme);
+    } else if (typeof setTheme === 'function') {
+      setTheme(nextTheme);
+    }
+    setShowMenu(false);
+  }, [theme, sharedStyles, setTheme, setShowMenu]);
+
+  const menuItems = useMemo(
+    () => [
+      {
+        key: 'progress',
+        label: 'View progress',
+        icon: 'insert-chart-outlined',
+        action: () => handleNavigate('progress'),
+        isActive: currentView === 'progress',
+      },
+      {
+        key: 'settings',
+        label: 'App settings',
+        icon: 'settings',
+        action: () => handleNavigate('settings'),
+        isActive: currentView === 'settings',
+      },
+      {
+        key: 'theme',
+        label: theme === 'Light' ? 'Switch to Dark mode' : 'Switch to Light mode',
+        icon: theme === 'Light' ? 'dark-mode' : 'light-mode',
+        action: handleToggleTheme,
+        isActive: false,
+      },
+    ],
+    [currentView, theme, handleNavigate, handleToggleTheme],
+  );
+
   return (
     <ScrollView
       style={homeStyles.screen}
@@ -428,20 +522,55 @@ export default function HomePage({
             <Text style={homeStyles.headerTitle}>{pageTitle}</Text>
             <Text style={homeStyles.headerSubtitle}>{headerSubtitle}</Text>
           </View>
-          <TouchableOpacity
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: palette.accentSoft,
-            }}
-            onPress={() => setShowMenu(!showMenu)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialIcons name="menu" size={22} color={palette.accent} />
-          </TouchableOpacity>
+          <View style={homeStyles.menuWrapper}>
+            <TouchableOpacity
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: palette.accentSoft,
+              }}
+              onPress={() => setShowMenu(!showMenu)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons name="menu" size={22} color={palette.accent} />
+            </TouchableOpacity>
+
+            {showMenu && (
+              <View style={homeStyles.menuContainer}>
+                {menuItems.map((item, index) => (
+                  <React.Fragment key={item.key}>
+                    <TouchableOpacity
+                      style={[
+                        homeStyles.menuItem,
+                        item.isActive && homeStyles.menuItemActive,
+                      ]}
+                      onPress={item.action}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialIcons
+                        name={item.icon}
+                        size={18}
+                        color={item.isActive ? palette.accent : palette.textSecondary}
+                        style={homeStyles.menuItemIcon}
+                      />
+                      <Text
+                        style={[
+                          homeStyles.menuItemText,
+                          item.isActive && { color: palette.accent },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                    {index < menuItems.length - 1 && <View style={homeStyles.menuDivider} />}
+                  </React.Fragment>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={homeStyles.headerMetricsRow}>
