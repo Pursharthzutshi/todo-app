@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { SafeAreaView, StatusBar } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -16,7 +17,11 @@ import defaultStyles from './styles';
 
 // Constants
 const NAV_HEIGHT = 60;
-const STORAGE_KEY = 'TASKS';
+const STORAGE_KEYS = {
+  tasks: 'TASKS',
+  adFree: 'HAS_AD_FREE',
+  pro: 'HAS_PRO',
+};
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const DAYS = DAY_NAMES.map((fullName, id) => ({
@@ -176,7 +181,7 @@ const DEFAULT_TASKS = (() => {
   ].map(normalizeTask);
 })();
 
-export default function App() {
+function AppContent() {
   // App settings
   const [theme, setTheme] = useState('Light');
   const [fontSize, setFontSize] = useState('Medium');
@@ -194,6 +199,11 @@ export default function App() {
   const [selectedDueDateKey, setSelectedDueDateKey] = useState('none');
   const [tasks, setTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
   const savedTodoTasks = useMemo(() => tasks.map(task => ({ ...task })), [tasks]);
+  const [hasAdFree, setHasAdFree] = useState(false);
+  const [hasPro, setHasPro] = useState(false);
+  const insets = typeof useSafeAreaInsets === 'function'
+    ? useSafeAreaInsets()
+    : { top: 0, bottom: 0, left: 0, right: 0 };
   const selectedDueDateLabel = useMemo(() => {
     if (!selectedDueDateKey || selectedDueDateKey === 'none') return 'No due date';
     const date = startOfDay(selectedDueDateKey);
@@ -209,10 +219,19 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Load tasks
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
+        const keysToLoad = [
+          STORAGE_KEYS.tasks,
+          STORAGE_KEYS.adFree,
+          STORAGE_KEYS.pro,
+          'theme',
+          'fontSize',
+        ];
+        const entries = await AsyncStorage.multiGet(keysToLoad);
+        const stored = Object.fromEntries(entries);
+
+        const rawTasks = stored[STORAGE_KEYS.tasks];
+        if (rawTasks) {
+          const parsed = JSON.parse(rawTasks);
           if (Array.isArray(parsed)) {
             const normalized = parsed.map(normalizeTask);
             setTasks(normalized);
@@ -220,11 +239,20 @@ export default function App() {
             console.warn('Stored tasks is not an array, ignoring.');
           }
         }
-        
-        // Load settings
-        const savedTheme = await AsyncStorage.getItem('theme');
-        const savedFontSize = await AsyncStorage.getItem('fontSize');
-        
+
+        const rawAdFree = stored[STORAGE_KEYS.adFree];
+        if (rawAdFree !== undefined && rawAdFree !== null) {
+          setHasAdFree(rawAdFree === 'true');
+        }
+
+        const rawPro = stored[STORAGE_KEYS.pro];
+        if (rawPro !== undefined && rawPro !== null) {
+          setHasPro(rawPro === 'true');
+        }
+
+        const savedTheme = stored.theme;
+        const savedFontSize = stored.fontSize;
+
         if (savedTheme) setTheme(savedTheme);
         if (savedFontSize) setFontSize(savedFontSize);
       } catch (err) {
@@ -253,7 +281,7 @@ export default function App() {
       });
       setTasks(prev => {
         const newList = [taskItem, ...prev];
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => {
+        AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => {
           console.error('Failed to save tasks to AsyncStorage', e);
         });
         return newList;
@@ -269,7 +297,7 @@ export default function App() {
   function toggleTask(id) {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t));
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => console.error(e));
       return newList;
     });
   }
@@ -278,7 +306,7 @@ export default function App() {
   function toggleWishlist(id) {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, wishlist: !t.wishlist } : t));
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => console.error(e));
       return newList;
     });
   }
@@ -287,10 +315,27 @@ export default function App() {
   function toggleImportant(id) {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, important: !t.important } : t));
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => console.error(e));
       return newList;
     });
   }
+
+  // Future billing integration can call these helpers to adjust local entitlements.
+  const updateAdFreeStatus = useCallback((value) => {
+    const normalized = !!value;
+    setHasAdFree(normalized);
+    AsyncStorage.setItem(STORAGE_KEYS.adFree, normalized ? 'true' : 'false').catch((err) => {
+      console.error('Failed to persist ad-free status', err);
+    });
+  }, []);
+
+  const updateProStatus = useCallback((value) => {
+    const normalized = !!value;
+    setHasPro(normalized);
+    AsyncStorage.setItem(STORAGE_KEYS.pro, normalized ? 'true' : 'false').catch((err) => {
+      console.error('Failed to persist pro status', err);
+    });
+  }, []);
 
   // Filter tasks based on activeFilter and search
   const dayCounts = useMemo(() => countTasksByDay(tasks), [tasks]);
@@ -514,6 +559,10 @@ export default function App() {
     toggleTask,
     toggleImportant,
     toggleWishlist,
+    hasAdFree,
+    hasPro,
+    setHasAdFree: updateAdFreeStatus,
+    setHasPro: updateProStatus,
     savedTodoTasks,
     selectedPriority,
     setSelectedPriority,
@@ -575,5 +624,13 @@ export default function App() {
       />
       </SafeAreaView>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }
