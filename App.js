@@ -567,6 +567,98 @@ function AppContent() {
     }
   }, [updateAdFreeStatus]);
 
+  const handleAddFolder = useCallback((name) => {
+    if (!hasPro) {
+      return { success: false, error: 'Upgrade to Pro to add folders.' };
+    }
+    const trimmed = (name || '').trim();
+    if (!trimmed) {
+      return { success: false, error: 'Folder name cannot be empty.' };
+    }
+    if (folders.includes(trimmed)) {
+      return { success: false, error: 'Folder name already exists.' };
+    }
+    const updated = [...folders, trimmed];
+    setFolders(updated);
+    setSelectedFolder(trimmed);
+    setActiveFolder((current) => (current === 'All' ? trimmed : current));
+    return { success: true, folder: trimmed };
+  }, [folders, hasPro]);
+
+  const handleRenameFolder = useCallback((currentName, nextName) => {
+    if (!hasPro) {
+      return { success: false, error: 'Upgrade to Pro to manage folders.' };
+    }
+    const source = typeof currentName === 'string' ? currentName.trim() : '';
+    const trimmed = typeof nextName === 'string' ? nextName.trim() : '';
+    if (!source || !folders.includes(source)) {
+      return { success: false, error: 'Folder not found.' };
+    }
+    if (!trimmed) {
+      return { success: false, error: 'Folder name cannot be empty.' };
+    }
+    if (BASE_FOLDERS.includes(source)) {
+      return { success: false, error: 'Default folders cannot be renamed.' };
+    }
+    if (folders.includes(trimmed)) {
+      return { success: false, error: 'Folder name already exists.' };
+    }
+    const updatedFolders = folders.map((name) => (name === source ? trimmed : name));
+    setFolders(updatedFolders);
+    setSelectedFolder((current) => (current === source ? trimmed : current));
+    setActiveFolder((current) => {
+      if (current === 'All') return 'All';
+      if (current === source) return trimmed;
+      return updatedFolders.includes(current) ? current : 'All';
+    });
+    setTasks((prev) => {
+      const updatedTasks = prev.map((task) => (
+        task.folder === source ? { ...task, folder: trimmed } : task
+      ));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(updatedTasks)).catch((e) => {
+        console.error('Failed to persist tasks after folder rename', e);
+      });
+      return updatedTasks;
+    });
+    return { success: true, folder: trimmed };
+  }, [folders, hasPro]);
+
+  const handleDeleteFolder = useCallback((name) => {
+    if (!hasPro) {
+      return { success: false, error: 'Upgrade to Pro to manage folders.' };
+    }
+    const target = typeof name === 'string' ? name.trim() : '';
+    if (!target || !folders.includes(target)) {
+      return { success: false, error: 'Folder not found.' };
+    }
+    if (BASE_FOLDERS.includes(target)) {
+      return { success: false, error: 'Default folders cannot be removed.' };
+    }
+    const filtered = folders.filter((folder) => folder !== target);
+    const sanitizedFolders = filtered.length ? filtered : [...BASE_FOLDERS];
+    const fallback = sanitizedFolders[0] || BASE_FOLDERS[0];
+    setFolders(sanitizedFolders);
+    setActiveFolder((current) => {
+      if (current === 'All') return 'All';
+      if (current === target) return 'All';
+      return sanitizedFolders.includes(current) ? current : 'All';
+    });
+    setSelectedFolder((current) => {
+      if (current === target) return fallback;
+      return sanitizedFolders.includes(current) ? current : fallback;
+    });
+    setTasks((prev) => {
+      const updatedTasks = prev.map((task) => (
+        task.folder === target ? { ...task, folder: fallback } : task
+      ));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(updatedTasks)).catch((e) => {
+        console.error('Failed to persist tasks after folder removal', e);
+      });
+      return updatedTasks;
+    });
+    return { success: true, folder: fallback };
+  }, [folders, hasPro]);
+
   const completeTasksBulk = useCallback((ids = []) => {
     if (!Array.isArray(ids) || !ids.length) return;
     const idSet = new Set(ids);
@@ -802,6 +894,9 @@ function AppContent() {
       }
     },
     addFolder: (name) => handleAddFolder(name),
+    renameFolder: (source, next) => handleRenameFolder(source, next),
+    deleteFolder: (name) => handleDeleteFolder(name),
+    baseFolders: BASE_FOLDERS,
     savedTodoTasks,
     selectedPriority,
     setSelectedPriority,

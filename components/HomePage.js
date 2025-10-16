@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Modal,
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
@@ -245,6 +246,15 @@ export default function HomePage({
   toggleTask,
   toggleImportant,
   toggleWishlist,
+  folders = [],
+  activeFolder = 'All',
+  setActiveFolder = () => {},
+  selectedFolder = 'Personal',
+  setSelectedFolder = () => {},
+  addFolder = () => ({ success: false, error: 'Upgrade to Pro to add folders.' }),
+  renameFolder = () => ({ success: false, error: 'Upgrade to Pro to manage folders.' }),
+  deleteFolder = () => ({ success: false, error: 'Upgrade to Pro to manage folders.' }),
+  baseFolders = [],
   title = 'Today',
   dateLabel,
   savedTodoTasks = [],
@@ -281,7 +291,69 @@ export default function HomePage({
   const voiceHandledRef = useRef(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const [showAddFolderInput, setShowAddFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isManageModalVisible, setIsManageModalVisible] = useState(false);
+  const [folderSearchQuery, setFolderSearchQuery] = useState('');
+  const [isSortAscending, setIsSortAscending] = useState(true);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [folderBeingEdited, setFolderBeingEdited] = useState(null);
+  const folderChipScrollRef = useRef(null);
+  const folderChipPositionsRef = useRef({});
   const priorityOptions = useMemo(() => PRO_PRIORITY_OPTIONS, []);
+
+  const folderOptions = useMemo(
+    () => folders.map((name) => ({ key: name, value: name })),
+    [folders],
+  );
+
+  const handleFolderSelect = useCallback((folderKey) => {
+    if (folders.includes(folderKey)) {
+      setSelectedFolder(folderKey);
+    }
+  }, [folders, setSelectedFolder]);
+
+  const handleFolderChipPress = useCallback((folderName) => {
+    setActiveFolder(folderName);
+  }, [setActiveFolder]);
+
+  const folderDefaultOption = useMemo(
+    () => ({ key: selectedFolder, value: selectedFolder }),
+    [selectedFolder],
+  );
+
+  const folderChipList = useMemo(() => ['All', ...folders], [folders]);
+
+  const baseFolderSet = useMemo(() => new Set(baseFolders || []), [baseFolders]);
+
+  const managedFolderItems = useMemo(() => {
+    const query = (folderSearchQuery || '').trim().toLowerCase();
+    const list = folders.map((name) => ({
+      name,
+      isBase: baseFolderSet.has(name),
+    }));
+    const filtered = query
+      ? list.filter((item) => item.name.toLowerCase().includes(query))
+      : list;
+    const sorted = [...filtered].sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name);
+      return isSortAscending ? comparison : -comparison;
+    });
+    return sorted;
+  }, [folders, baseFolderSet, folderSearchQuery, isSortAscending]);
+
+  const scrollToFolder = useCallback((folderName) => {
+    const scrollView = folderChipScrollRef.current;
+    const positions = folderChipPositionsRef.current;
+    if (!scrollView || !positions[folderName]) return;
+    const { x } = positions[folderName];
+    const targetX = Math.max(x - 20, 0);
+    try {
+      scrollView.scrollTo({ x: targetX, animated: true });
+    } catch {
+      // Ignore scroll errors
+    }
+  }, []);
 
   const prioritySelectOptions = useMemo(
     () =>
@@ -314,6 +386,108 @@ export default function HomePage({
     }),
     [priorityDefault, hasPro],
   );
+
+  const handleManageRequiresPro = useCallback(() => {
+    if (typeof onRequestUpgrade === 'function') {
+      onRequestUpgrade('pro');
+    }
+    Alert.alert('Pro required', 'Upgrade to Pro to manage folders.');
+  }, [onRequestUpgrade]);
+
+  const handleOpenManageFolders = useCallback(() => {
+    setShowAddFolderInput(false);
+    setFolderSearchQuery('');
+    setIsSortAscending(true);
+    setFolderBeingEdited(null);
+    setEditingFolderName('');
+    setIsManageModalVisible(true);
+  }, []);
+
+  const handleCloseManageFolders = useCallback(() => {
+    setIsManageModalVisible(false);
+    setFolderSearchQuery('');
+    setFolderBeingEdited(null);
+    setEditingFolderName('');
+  }, []);
+
+  const handleToggleSortOrder = useCallback(() => {
+    setIsSortAscending((prev) => !prev);
+  }, []);
+
+  const handleStartRenameFolder = useCallback((folderName) => {
+    setFolderBeingEdited(folderName);
+    setEditingFolderName(folderName);
+  }, []);
+
+  const handleRenameCancel = useCallback(() => {
+    setFolderBeingEdited(null);
+    setEditingFolderName('');
+  }, []);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (!folderBeingEdited) return;
+    const trimmed = (editingFolderName || '').trim();
+    if (!trimmed) {
+      Alert.alert('Folder name required', 'Please enter a folder name.');
+      return;
+    }
+    const result = renameFolder(folderBeingEdited, trimmed);
+    if (!result?.success) {
+      const message = result?.error || 'Please try again.';
+      if (message.toLowerCase().includes('upgrade') && typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('pro');
+      }
+      Alert.alert('Unable to rename folder', message);
+      return;
+    }
+    setFolderBeingEdited(null);
+    setEditingFolderName('');
+  }, [folderBeingEdited, editingFolderName, renameFolder, onRequestUpgrade]);
+
+  const handleDeleteFolderConfirm = useCallback((folderName) => {
+    Alert.alert(
+      'Delete folder',
+      `Delete "${folderName}"? Tasks will move to your default folder.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const result = deleteFolder(folderName);
+            if (!result?.success) {
+              const message = result?.error || 'Please try again.';
+              if (message.toLowerCase().includes('upgrade') && typeof onRequestUpgrade === 'function') {
+                onRequestUpgrade('pro');
+              }
+              Alert.alert('Unable to delete folder', message);
+              return;
+            }
+            if (folderBeingEdited === folderName) {
+              setFolderBeingEdited(null);
+              setEditingFolderName('');
+            }
+          },
+        },
+      ],
+    );
+  }, [deleteFolder, folderBeingEdited, onRequestUpgrade]);
+
+  const handleManageSelectFolder = useCallback((folderName) => {
+    if (!folderName) return;
+    if (folderName !== 'All' && !folders.includes(folderName)) return;
+    setActiveFolder(folderName);
+    if (folderName !== 'All' && folders.includes(folderName)) {
+      setSelectedFolder(folderName);
+    }
+    handleCloseManageFolders();
+    const schedule = typeof requestAnimationFrame === 'function'
+      ? requestAnimationFrame
+      : (cb) => setTimeout(cb, 0);
+    schedule(() => {
+      scrollToFolder(folderName);
+    });
+  }, [folders, handleCloseManageFolders, scrollToFolder, setActiveFolder, setSelectedFolder]);
 
   const handlePrioritySelect = useCallback(
     (nextKey) => {
@@ -534,7 +708,305 @@ export default function HomePage({
           fontSize: scaleFont(12, fontScale),
           color: palette.textSecondary,
         },
+        folderSelectWrapper: {
+          marginTop: 12,
+        },
+        folderHint: {
+          marginTop: 6,
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+        },
+        folderChipsSection: {
+          marginTop: 22,
+          gap: 10,
+        },
+        folderHeaderRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        folderHeaderText: {
+          fontSize: scaleFont(13, fontScale),
+          fontWeight: '600',
+          color: palette.textSecondary,
+        },
+        addFolderButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 12,
+          backgroundColor: palette.filterBackground,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          gap: 6,
+        },
+        addFolderButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        addFolderInputRow: {
+          marginTop: 10,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        addFolderInput: {
+          flex: 1,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          backgroundColor: palette.inputBackground,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          color: palette.textPrimary,
+          fontSize: scaleFont(14, fontScale),
+        },
+        addFolderActions: {
+          flexDirection: 'row',
+          gap: 8,
+        },
+        addFolderActionButton: {
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 12,
+          backgroundColor: palette.addButtonBackground,
+        },
+        addFolderActionText: {
+          color: palette.addButtonText,
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '600',
+        },
+        addFolderCancelButton: {
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 12,
+          backgroundColor: palette.filterBackground,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+        },
+        folderHeaderActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        manageModalOverlay: {
+          flex: 1,
+          backgroundColor: 'rgba(15,23,42,0.32)',
+          justifyContent: 'center',
+          paddingHorizontal: 20,
+        },
+        manageModalBackdrop: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'transparent',
+        },
+        manageModalCard: {
+          borderRadius: 20,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          padding: 20,
+          gap: 16,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.28 : 0.15,
+          shadowRadius: 24,
+          elevation: 8,
+        },
+        manageModalHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        manageModalTitle: {
+          fontSize: scaleFont(16, fontScale),
+          fontWeight: '700',
+          color: palette.textPrimary,
+        },
+        manageModalCloseButton: {
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 12,
+          backgroundColor: palette.filterBackground,
+        },
+        manageModalCloseText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        manageInfoBox: {
+          backgroundColor: palette.accentSoft,
+          borderRadius: 12,
+          padding: 12,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+        },
+        manageInfoText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.accent,
+          fontWeight: '600',
+        },
+        manageModalSearchInput: {
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          backgroundColor: palette.inputBackground,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          color: palette.textPrimary,
+          fontSize: scaleFont(14, fontScale),
+        },
+        manageModalSortRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        manageModalSortText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+        },
+        manageModalSortButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 12,
+          backgroundColor: palette.filterBackground,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+        },
+        manageModalList: {
+          maxHeight: 300,
+        },
+        manageFolderRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 10,
+          gap: 12,
+        },
+        manageFolderInfoButton: {
+          flex: 1,
+        },
+        manageFolderInfo: {
+          flex: 1,
+          gap: 6,
+        },
+        manageFolderName: {
+          fontSize: scaleFont(14, fontScale),
+          fontWeight: '600',
+          color: palette.textPrimary,
+        },
+        manageFolderBadge: {
+          alignSelf: 'flex-start',
+          marginTop: 2,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 10,
+          backgroundColor: palette.filterBackground,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          fontSize: scaleFont(11, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        manageFolderInput: {
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: palette.inputBorder,
+          backgroundColor: palette.inputBackground,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          color: palette.textPrimary,
+          fontSize: scaleFont(14, fontScale),
+        },
+        manageFolderActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        manageIconButton: {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          backgroundColor: palette.filterBackground,
+        },
+        manageIconButtonDisabled: {
+          opacity: 0.4,
+        },
+        manageActionButton: {
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          backgroundColor: palette.filterBackground,
+        },
+        manageSaveButton: {
+          backgroundColor: palette.addButtonBackground,
+          borderColor: palette.addButtonBackground,
+        },
+        manageCancelButton: {
+          borderColor: palette.filterBorder,
+        },
+        manageActionButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '600',
+          color: palette.addButtonText,
+        },
+        manageCancelButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '600',
+          color: palette.textSecondary,
+        },
+        manageEmptyMessage: {
+          marginTop: 20,
+          textAlign: 'center',
+          fontSize: scaleFont(13, fontScale),
+          color: palette.textSecondary,
+        },
+        folderChipScroll: {
+          marginTop: 10,
+        },
+        folderChipRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 6,
+        },
+        folderChip: {
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          backgroundColor: palette.filterBackground,
+        },
+        folderChipActive: {
+          borderColor: palette.accent,
+          backgroundColor: palette.accentSoft,
+        },
+        folderChipText: {
+          fontSize: scaleFont(12, fontScale),
+          fontWeight: '600',
+          color: palette.textSecondary,
+        },
+        folderChipTextActive: {
+          color: palette.accent,
+        },
         inputActionsRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 12,
+        },
+        listActionsRow: {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
@@ -1011,6 +1483,41 @@ export default function HomePage({
     );
   }, [selectedCount, selectedTaskIds, deleteTasksBulk]);
 
+  const handleToggleAddFolderInput = useCallback(() => {
+    if (!hasPro) {
+      if (typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('pro');
+      }
+      return;
+    }
+    setShowAddFolderInput((prev) => !prev);
+    setNewFolderName('');
+  }, [hasPro, onRequestUpgrade]);
+
+  const handleAddFolderSubmit = useCallback(() => {
+    const trimmed = (newFolderName || '').trim();
+    if (!trimmed) {
+      Alert.alert('Folder name required', 'Please enter a folder name.');
+      return;
+    }
+    const result = addFolder(trimmed);
+    if (!result?.success) {
+      Alert.alert('Unable to add folder', result?.error || 'Please try again.');
+      return;
+    }
+    setShowAddFolderInput(false);
+    setNewFolderName('');
+    if (result.folder) {
+      setActiveFolder(result.folder);
+      setSelectedFolder(result.folder);
+    }
+  }, [addFolder, newFolderName, setActiveFolder, setSelectedFolder]);
+
+  const handleAddFolderCancel = useCallback(() => {
+    setShowAddFolderInput(false);
+    setNewFolderName('');
+  }, []);
+
   return (
     <ScrollView
       style={homeStyles.screen}
@@ -1126,25 +1633,6 @@ export default function HomePage({
             {hasPro ? (isListening ? 'Listening…' : 'Voice task') : 'Voice (PRO)'}
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            homeStyles.actionChip,
-            !hasPro && homeStyles.actionChipDisabled,
-            isSelectionMode && homeStyles.actionChipActive,
-          ]}
-          onPress={handleToggleSelectionMode}
-          activeOpacity={hasPro ? 0.85 : 1}
-        >
-          <MaterialIcons
-            name={isSelectionMode ? 'close' : 'checklist'}
-            size={18}
-            color={hasPro ? palette.accent : palette.textSecondary}
-          />
-          <Text style={homeStyles.actionChipText}>
-            {hasPro ? (isSelectionMode ? 'Cancel select' : 'Multi-select') : 'Multi-select (PRO)'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {!!voiceStatus && (
@@ -1184,6 +1672,40 @@ export default function HomePage({
           {!hasPro && (
             <Text style={homeStyles.proFeatureHint}>
               Priority levels beyond Normal are part of Pro.
+            </Text>
+          )}
+        </View>
+
+        <View style={homeStyles.folderSelectWrapper}>
+          <SelectList
+            setSelected={handleFolderSelect}
+            data={folderOptions}
+            save="key"
+            placeholder="Folder"
+            defaultOption={folderDefaultOption}
+            search={false}
+            boxStyles={{
+              backgroundColor: palette.inputBackground,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: palette.inputBorder,
+            }}
+            dropdownStyles={{
+              backgroundColor: palette.inputBackground,
+              borderColor: palette.inputBorder,
+            }}
+            inputStyles={{
+              color: palette.textPrimary,
+              fontSize: scaleFont(14, fontScale),
+            }}
+            dropdownTextStyles={{
+              color: palette.textPrimary,
+              fontSize: scaleFont(14, fontScale),
+            }}
+          />
+          {!hasPro && (
+            <Text style={homeStyles.folderHint}>
+              Free plan includes Personal and Work folders. Upgrade to Pro to create more.
             </Text>
           )}
         </View>
@@ -1248,6 +1770,294 @@ export default function HomePage({
           fontScale={fontScale}
         />
 
+        <View style={homeStyles.folderChipsSection}>
+          <View style={homeStyles.folderHeaderRow}>
+            <Text style={homeStyles.folderHeaderText}>Folders</Text>
+            <View style={homeStyles.folderHeaderActions}>
+              <TouchableOpacity
+                style={homeStyles.addFolderButton}
+                onPress={handleToggleAddFolderInput}
+                activeOpacity={hasPro ? 0.85 : 1}
+              >
+                <MaterialIcons
+                  name="create-new-folder"
+                  size={16}
+                  color={palette.textSecondary}
+                />
+                <Text style={homeStyles.addFolderButtonText}>
+                  {hasPro ? 'Add folder' : 'Add folder (PRO)'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={homeStyles.addFolderButton}
+                onPress={handleOpenManageFolders}
+                activeOpacity={0.85}
+              >
+                <MaterialIcons
+                  name="folder-open"
+                  size={16}
+                  color={palette.textSecondary}
+                />
+                <Text style={homeStyles.addFolderButtonText}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {!hasPro && (
+            <Text style={homeStyles.folderHint}>
+              Upgrade to Pro to group tasks into unlimited folders.
+            </Text>
+          )}
+
+          {showAddFolderInput && (
+            <View style={homeStyles.addFolderInputRow}>
+              <TextInput
+                style={homeStyles.addFolderInput}
+                placeholder="Folder name"
+                placeholderTextColor={palette.inputPlaceholder}
+                value={newFolderName}
+                onChangeText={setNewFolderName}
+              />
+              <View style={homeStyles.addFolderActions}>
+                <TouchableOpacity
+                  style={homeStyles.addFolderActionButton}
+                  onPress={handleAddFolderSubmit}
+                >
+                  <Text style={homeStyles.addFolderActionText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={homeStyles.addFolderCancelButton}
+                  onPress={handleAddFolderCancel}
+                >
+                  <Text style={homeStyles.addFolderButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <ScrollView
+            ref={folderChipScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={homeStyles.folderChipScroll}
+          >
+            <View style={homeStyles.folderChipRow}>
+              {folderChipList.map((folderName) => {
+                const isActive = activeFolder === folderName;
+                return (
+                  <TouchableOpacity
+                    key={folderName}
+                    style={[
+                      homeStyles.folderChip,
+                      isActive && homeStyles.folderChipActive,
+                    ]}
+                    onPress={() => handleFolderChipPress(folderName)}
+                    onLayout={({ nativeEvent }) => {
+                      const layout = nativeEvent?.layout;
+                      if (!layout || typeof layout.x !== 'number') return;
+                      folderChipPositionsRef.current[folderName] = {
+                        x: layout.x,
+                        width: layout.width,
+                      };
+                    }}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Text
+                      style={[
+                        homeStyles.folderChipText,
+                        isActive && homeStyles.folderChipTextActive,
+                      ]}
+                    >
+                      {folderName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </View>
+
+        <Modal
+          visible={isManageModalVisible}
+          animationType="fade"
+          transparent
+          onRequestClose={handleCloseManageFolders}
+        >
+          <View style={homeStyles.manageModalOverlay}>
+            <TouchableOpacity
+              style={homeStyles.manageModalBackdrop}
+              activeOpacity={1}
+              onPress={handleCloseManageFolders}
+            />
+            <View style={homeStyles.manageModalCard}>
+              <View style={homeStyles.manageModalHeader}>
+                <Text style={homeStyles.manageModalTitle}>Manage folders</Text>
+                <TouchableOpacity
+                  style={homeStyles.manageModalCloseButton}
+                  onPress={handleCloseManageFolders}
+                >
+                  <Text style={homeStyles.manageModalCloseText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!hasPro && (
+                <View style={homeStyles.manageInfoBox}>
+                  <Text style={homeStyles.manageInfoText}>
+                    Upgrade to Pro to create, rename, or delete additional folders.
+                  </Text>
+                </View>
+              )}
+
+              <TextInput
+                style={homeStyles.manageModalSearchInput}
+                placeholder="Search folders"
+                placeholderTextColor={palette.inputPlaceholder}
+                value={folderSearchQuery}
+                onChangeText={setFolderSearchQuery}
+              />
+
+              <View style={homeStyles.manageModalSortRow}>
+                <Text style={homeStyles.manageModalSortText}>
+                  Sorted {isSortAscending ? 'A to Z' : 'Z to A'}
+                </Text>
+                <TouchableOpacity
+                  style={homeStyles.manageModalSortButton}
+                  onPress={handleToggleSortOrder}
+                >
+                  <MaterialIcons
+                    name={isSortAscending ? 'south' : 'north'}
+                    size={16}
+                    color={palette.textSecondary}
+                  />
+                  <Text style={homeStyles.addFolderButtonText}>
+                    {isSortAscending ? 'A-Z' : 'Z-A'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={homeStyles.manageModalList}
+                contentContainerStyle={{ paddingVertical: 4 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {managedFolderItems.length ? (
+                  managedFolderItems.map(({ name, isBase }) => {
+                    const isEditing = folderBeingEdited === name;
+                    const canModify = hasPro && !isBase;
+                    return (
+                      <View key={name} style={homeStyles.manageFolderRow}>
+                        {isEditing ? (
+                          <View style={homeStyles.manageFolderInfo}>
+                            <TextInput
+                              style={homeStyles.manageFolderInput}
+                              value={editingFolderName}
+                              onChangeText={setEditingFolderName}
+                              placeholder="Folder name"
+                              placeholderTextColor={palette.inputPlaceholder}
+                            />
+                            {isBase && (
+                              <Text style={homeStyles.manageFolderBadge}>Default</Text>
+                            )}
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            style={homeStyles.manageFolderInfoButton}
+                            onPress={() => handleManageSelectFolder(name)}
+                            activeOpacity={0.85}
+                          >
+                            <View style={homeStyles.manageFolderInfo}>
+                              <Text style={homeStyles.manageFolderName}>{name}</Text>
+                              {isBase && (
+                                <Text style={homeStyles.manageFolderBadge}>Default</Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        <View style={homeStyles.manageFolderActions}>
+                          {isEditing ? (
+                            <>
+                              <TouchableOpacity
+                                style={[
+                                  homeStyles.manageActionButton,
+                                  homeStyles.manageSaveButton,
+                                ]}
+                                onPress={handleRenameSubmit}
+                              >
+                                <Text style={homeStyles.manageActionButtonText}>Save</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  homeStyles.manageActionButton,
+                                  homeStyles.manageCancelButton,
+                                ]}
+                                onPress={handleRenameCancel}
+                              >
+                                <Text style={homeStyles.manageCancelButtonText}>Cancel</Text>
+                              </TouchableOpacity>
+                            </>
+                          ) : (
+                            <>
+                              <TouchableOpacity
+                                style={[
+                                  homeStyles.manageIconButton,
+                                  (!canModify) && homeStyles.manageIconButtonDisabled,
+                                ]}
+                                onPress={() => {
+                                  if (!hasPro) {
+                                    handleManageRequiresPro();
+                                    return;
+                                  }
+                                  if (isBase) {
+                                    Alert.alert('Default folder', 'Default folders cannot be renamed.');
+                                    return;
+                                  }
+                                  handleStartRenameFolder(name);
+                                }}
+                                activeOpacity={canModify ? 0.85 : 1}
+                              >
+                                <MaterialIcons
+                                  name="edit"
+                                  size={16}
+                                  color={palette.textSecondary}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  homeStyles.manageIconButton,
+                                  (!canModify) && homeStyles.manageIconButtonDisabled,
+                                ]}
+                                onPress={() => {
+                                  if (!hasPro) {
+                                    handleManageRequiresPro();
+                                    return;
+                                  }
+                                  if (isBase) {
+                                    Alert.alert('Default folder', 'Default folders cannot be deleted.');
+                                    return;
+                                  }
+                                  handleDeleteFolderConfirm(name);
+                                }}
+                                activeOpacity={canModify ? 0.85 : 1}
+                              >
+                                <MaterialIcons
+                                  name="delete-outline"
+                                  size={16}
+                                  color={palette.textSecondary}
+                                />
+                              </TouchableOpacity>
+                            </>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <Text style={homeStyles.manageEmptyMessage}>No folders found.</Text>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
         <Text style={homeStyles.todoListHeading}>Todo list</Text>
         <TextInput
           style={homeStyles.searchInput}
@@ -1257,6 +2067,27 @@ export default function HomePage({
           onChangeText={setSearchAllTodoListItem}
           returnKeyType="search"
         />
+
+        <View style={homeStyles.listActionsRow}>
+          <TouchableOpacity
+            style={[
+              homeStyles.actionChip,
+              !hasPro && homeStyles.actionChipDisabled,
+              isSelectionMode && homeStyles.actionChipActive,
+            ]}
+            onPress={handleToggleSelectionMode}
+            activeOpacity={hasPro ? 0.85 : 1}
+          >
+            <MaterialIcons
+              name={isSelectionMode ? 'close' : 'checklist'}
+              size={18}
+              color={hasPro ? palette.accent : palette.textSecondary}
+            />
+            <Text style={homeStyles.actionChipText}>
+              {hasPro ? (isSelectionMode ? 'Cancel select' : 'Multi-select') : 'Multi-select (PRO)'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {hasPro && isSelectionMode && (
           <View style={homeStyles.bulkActionsBar}>
