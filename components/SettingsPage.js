@@ -391,6 +391,11 @@ const createThemedStyles = (palette, fontScale = 1) =>
       fontWeight: '600',
       color: palette.textSecondary,
     },
+    devResetButton: {
+      marginTop: 16,
+      backgroundColor: palette.elevated,
+      borderColor: palette.border,
+    },
     sectionCard: {
       backgroundColor: palette.card,
       borderRadius: 24,
@@ -753,6 +758,16 @@ export default function SettingsPage({
     );
   }, [hasPro, onRequestUpgrade, setHasPro]);
 
+  const handleResetEntitlements = useCallback(() => {
+    if (typeof setHasPro === 'function') {
+      setHasPro(false);
+    }
+    if (typeof setHasAdFree === 'function') {
+      setHasAdFree(false);
+    }
+    Alert.alert('Entitlements reset', 'Pro and ad-free flags have been cleared.');
+  }, [setHasPro, setHasAdFree]);
+
   const bottomInset = safeAreaInsets?.bottom ?? 0;
 
   const palette = useMemo(
@@ -873,6 +888,21 @@ export default function SettingsPage({
             </Text>
           </View>
         </View>
+        {__DEV__ && (
+          <TouchableOpacity
+            style={[themedStyles.upgradeButton, themedStyles.devResetButton]}
+            onPress={handleResetEntitlements}
+            activeOpacity={0.85}
+          >
+            <View style={themedStyles.upgradeButtonTextGroup}>
+              <Text style={themedStyles.upgradeButtonLabel}>Reset entitlements (dev)</Text>
+              <Text style={themedStyles.upgradeButtonCaption}>
+                Clears local Pro and ad-free flags for testing.
+              </Text>
+            </View>
+            <MaterialIcons name="restart-alt" size={20} color={palette.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={themedStyles.sectionCard}>
