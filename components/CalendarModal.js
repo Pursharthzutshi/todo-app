@@ -83,7 +83,7 @@ const formatISO = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const generateCalendar = (referenceDate) => {
+const generateCalendar = (referenceDate, todayISO) => {
   const monthStart = startOfDay(referenceDate);
   monthStart.setDate(1);
 
@@ -120,11 +120,14 @@ const generateCalendar = (referenceDate) => {
       monthStart.getMonth(),
       day,
     );
+    const iso = formatISO(currentDate);
+    const isPast = iso < todayISO;
     days.push({
       key: `current-${monthStart.getMonth()}-${monthStart.getFullYear()}-${day}`,
       label: String(day),
       date: currentDate,
       type: 'current',
+      disabled: isPast,
     });
   }
 
@@ -171,7 +174,7 @@ export default function CalendarModal({
 
   const { currentMonthLabel, calendarDays, selectedISO } = useMemo(() => {
     const monthLabel = `${MONTH_NAMES[activeMonth.getMonth()]} ${activeMonth.getFullYear()}`;
-    const grid = generateCalendar(activeMonth);
+    const grid = generateCalendar(activeMonth, todayISO);
     return {
       currentMonthLabel: monthLabel,
       calendarDays: grid,
@@ -334,6 +337,7 @@ export default function CalendarModal({
                 const iso = day.date ? formatISO(day.date) : null;
                 const isSelected = iso && selectedISO === iso;
                 const isToday = iso === todayISO;
+                const isDisabled = day.disabled && !isToday;
                 const dayKey = `${day.key}-${index}`;
                 const dayScale = getDayScale(dayKey);
 
@@ -349,10 +353,13 @@ export default function CalendarModal({
                         borderWidth: 1,
                         borderColor: palette.dayTodayBorder,
                       },
+                      isDisabled && {
+                        opacity: 0.35,
+                      },
                     ]}
-                    disabled={!day.date}
+                    disabled={!day.date || isDisabled}
                     onPress={() => {
-                      if (day.date && onSelect) {
+                      if (day.date && onSelect && !isDisabled) {
                         Animated.sequence([
                           Animated.timing(dayScale, {
                             toValue: 0.85,
