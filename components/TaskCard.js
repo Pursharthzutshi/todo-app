@@ -155,6 +155,9 @@ export default function TaskCard({
   onToggleWishlist = () => {},
   theme = 'Light',
   fontScale = 1,
+  selectionMode = false,
+  selected = false,
+  onSelectToggle = () => {},
 }) {
   const palette = CARD_THEMES[theme] || CARD_THEMES.Light;
 
@@ -192,6 +195,17 @@ export default function TaskCard({
           shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.35 : 0.12,
           shadowRadius: 18,
           elevation: 5,
+        },
+        containerSelected: {
+          borderColor: palette.accent,
+          backgroundColor: palette.subtleChip || palette.accentSoft,
+        },
+        selectionToggle: {
+          width: 30,
+          height: 30,
+          marginRight: 16,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         checkbox: {
           width: 30,
@@ -274,6 +288,9 @@ export default function TaskCard({
           marginLeft: 18,
           alignItems: 'flex-end',
         },
+        actionsDisabled: {
+          opacity: 0.35,
+        },
         actionButton: {
           padding: 6,
           borderRadius: 12,
@@ -286,18 +303,37 @@ export default function TaskCard({
     setTasks((prevTasks) => prevTasks.filter((t) => t.id !== id));
   };
 
+  const containerStyles = [
+    cardStyles.container,
+    selectionMode && selected && cardStyles.containerSelected,
+  ];
+
   return (
-    <View style={cardStyles.container}>
-      <TouchableOpacity
-        style={[
-          cardStyles.checkbox,
-          task.completed && cardStyles.checkboxChecked,
-        ]}
-        onPress={onToggle}
-        hitSlop={{ top: 20, bottom: 10, left: 10, right: 10 }}
-      >
-        {task.completed && <Text style={cardStyles.checkmark}>✓</Text>}
-      </TouchableOpacity>
+    <TouchableOpacity
+      activeOpacity={selectionMode ? 0.85 : 1}
+      onPress={selectionMode ? onSelectToggle : undefined}
+      style={containerStyles}
+    >
+      {selectionMode ? (
+        <View style={cardStyles.selectionToggle}>
+          <MaterialIcons
+            name={selected ? 'check-circle' : 'radio-button-unchecked'}
+            size={24}
+            color={selected ? palette.accent : palette.iconColor}
+          />
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[
+            cardStyles.checkbox,
+            task.completed && cardStyles.checkboxChecked,
+          ]}
+          onPress={onToggle}
+          hitSlop={{ top: 20, bottom: 10, left: 10, right: 10 }}
+        >
+          {task.completed && <Text style={cardStyles.checkmark}>✓</Text>}
+        </TouchableOpacity>
+      )}
 
       <View style={cardStyles.content}>
         <View style={cardStyles.titleRow}>
@@ -323,55 +359,63 @@ export default function TaskCard({
         <Text style={cardStyles.meta}>{detailText}</Text>
 
         <View style={cardStyles.footerRow}>
-          <View style={cardStyles.priorityPill}>
-            <Text style={cardStyles.priorityText}>{priorityValue}</Text>
-          </View>
-          {task.wishlist && (
-            <View style={cardStyles.statusChip}>
-              <MaterialIcons name="favorite" size={16} color={palette.accent} />
-              <Text style={cardStyles.statusText}>Wishlist</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={cardStyles.priorityPill}>
+              <Text style={cardStyles.priorityText}>{priorityValue}</Text>
             </View>
-          )}
+            {task.completed ? (
+              <View style={cardStyles.statusChip}>
+                <MaterialIcons name="check" size={14} color={palette.textSecondary} />
+                <Text style={cardStyles.statusText}>Done</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View
+            style={[cardStyles.actions, selectionMode && cardStyles.actionsDisabled]}
+            pointerEvents={selectionMode ? 'none' : 'auto'}
+          >
+            <TouchableOpacity
+              style={cardStyles.actionButton}
+              onPress={onToggleImportant}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={selectionMode}
+            >
+              <MaterialIcons
+                name={task.important ? 'star' : 'star-border'}
+                size={22}
+                color={task.important ? palette.iconActive : palette.iconColor}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={cardStyles.actionButton}
+              onPress={onToggleWishlist}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={selectionMode}
+            >
+              <MaterialIcons
+                name={task.wishlist ? 'favorite' : 'favorite-border'}
+                size={22}
+                color={task.wishlist ? palette.iconActive : palette.iconColor}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={cardStyles.actionButton}
+              onPress={() => deleteTodoTask(task.id)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={selectionMode}
+            >
+              <MaterialIcons
+                name="delete-outline"
+                size={22}
+                color={palette.delete}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-
-      <View style={cardStyles.actions}>
-        <TouchableOpacity
-          style={cardStyles.actionButton}
-          onPress={onToggleImportant}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <MaterialIcons
-            name={task.important ? 'star' : 'star-border'}
-            size={22}
-            color={task.important ? palette.iconActive : palette.iconColor}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={cardStyles.actionButton}
-          onPress={onToggleWishlist}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <MaterialIcons
-            name={task.wishlist ? 'favorite' : 'favorite-border'}
-            size={22}
-            color={task.wishlist ? palette.iconActive : palette.iconColor}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={cardStyles.actionButton}
-          onPress={() => deleteTodoTask(task.id)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <MaterialIcons
-            name="delete-outline"
-            size={22}
-            color={palette.delete}
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import getVisibleTasks from './VisibleTasks';
 import AllDays from '../AllDays';
 import CalendarModal from './CalendarModal';
 import TaskCard from './TaskCard';
+import Voice from '@react-native-voice/voice';
 
 const HOME_THEMES = {
   Light: {
@@ -252,6 +253,8 @@ export default function HomePage({
   searchAllTodoListItem,
   setSearchAllTodoListItem,
   setTasks,
+  completeTasksBulk,
+  deleteTasksBulk,
   dayFilter,
   setDayFilter,
   Days,
@@ -271,6 +274,13 @@ export default function HomePage({
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
   const bottomInset = safeAreaInsets?.bottom ?? 0;
+  const [isListening, setIsListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
+  const [voiceError, setVoiceError] = useState('');
+  const [voiceAvailable, setVoiceAvailable] = useState(true);
+  const voiceHandledRef = useRef(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]);
   const priorityOptions = useMemo(() => PRO_PRIORITY_OPTIONS, []);
 
   const prioritySelectOptions = useMemo(
@@ -524,6 +534,45 @@ export default function HomePage({
           fontSize: scaleFont(12, fontScale),
           color: palette.textSecondary,
         },
+        inputActionsRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 12,
+        },
+        actionChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 10,
+          paddingHorizontal: 14,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          backgroundColor: palette.filterBackground,
+          gap: 8,
+        },
+        actionChipText: {
+          fontSize: scaleFont(13, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        actionChipDisabled: {
+          opacity: 0.6,
+        },
+        actionChipActive: {
+          borderColor: palette.accent,
+          backgroundColor: palette.accentSoft,
+        },
+        voiceStatusText: {
+          marginTop: 6,
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+        },
+        voiceErrorText: {
+          marginTop: 4,
+          fontSize: scaleFont(12, fontScale),
+          color: '#dc2626',
+        },
         dueDateButton: {
           marginTop: 12,
           paddingVertical: 14,
@@ -584,6 +633,78 @@ export default function HomePage({
           fontSize: scaleFont(14, fontScale),
           color: palette.emptyState,
           textAlign: 'center',
+        },
+        bulkActionsBar: {
+          marginTop: 12,
+          padding: 12,
+          borderRadius: 16,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.25 : 0.12,
+          shadowRadius: 12,
+          elevation: 4,
+          gap: 10,
+        },
+        bulkSelectedText: {
+          fontSize: scaleFont(13, fontScale),
+          fontWeight: '600',
+          color: palette.textSecondary,
+        },
+        bulkButtons: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 10,
+          alignItems: 'center',
+        },
+        bulkButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 12,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: palette.filterBorder,
+          backgroundColor: palette.filterBackground,
+          gap: 6,
+        },
+        bulkButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+        },
+        bulkButtonDisabled: {
+          opacity: 0.4,
+        },
+        bulkPrimaryButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: 12,
+          backgroundColor: palette.addButtonBackground,
+          gap: 6,
+        },
+        bulkPrimaryButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          color: palette.addButtonText,
+          fontWeight: '700',
+        },
+        bulkDangerButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: 12,
+          backgroundColor: '#DC2626',
+          gap: 6,
+        },
+        bulkDangerButtonText: {
+          fontSize: scaleFont(12, fontScale),
+          color: '#fff',
+          fontWeight: '700',
         },
       }),
     [palette, theme, NAV_HEIGHT, bottomInset, fontScale, hasPro],
@@ -704,6 +825,163 @@ export default function HomePage({
     [currentView, theme, hasPro, onRequestUpgrade, handleNavigate, handleToggleTheme, setShowMenu],
   );
 
+  const handleVoiceResult = useCallback((text) => {
+    if (!text || voiceHandledRef.current) return;
+    voiceHandledRef.current = true;
+    setVoiceStatus('Saving task...');
+    setNewTask(text);
+    setTimeout(() => {
+      addTask();
+      setVoiceStatus('');
+      Alert.alert('Task added', `"${text}" was added from voice input.`);
+    }, 0);
+  }, [addTask, setNewTask]);
+
+  const handleVoicePress = useCallback(async () => {
+    if (!hasPro) {
+      if (typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('pro');
+      }
+      return;
+    }
+    if (!voiceAvailable) {
+      Alert.alert('Microphone unavailable', 'Speech recognition is not available on this device.');
+      return;
+    }
+    try {
+      if (isListening) {
+        await Voice.stop();
+        setVoiceStatus('Processing...');
+      } else {
+        voiceHandledRef.current = false;
+        setVoiceStatus('Listening...');
+        setVoiceError('');
+        await Voice.start('en-US');
+        setIsListening(true);
+      }
+    } catch (err) {
+      console.error('Voice error:', err);
+      setIsListening(false);
+      setVoiceStatus('');
+      const message = err?.message || 'Failed to start voice recognition';
+      setVoiceError(message);
+      Alert.alert('Voice error', message);
+    }
+  }, [hasPro, onRequestUpgrade, voiceAvailable, isListening]);
+
+  useEffect(() => {
+    if (!hasPro) return undefined;
+
+    Voice.onSpeechStart = () => {
+      setIsListening(true);
+      setVoiceStatus('Listening...');
+      setVoiceError('');
+    };
+    Voice.onSpeechEnd = () => {
+      setIsListening(false);
+      if (!voiceHandledRef.current) {
+        setVoiceStatus('');
+      }
+    };
+    Voice.onSpeechResults = (event) => {
+      const text = event?.value?.[0];
+      if (text) {
+        handleVoiceResult(text);
+      }
+    };
+    Voice.onSpeechError = (event) => {
+      console.error('Speech error', event);
+      setIsListening(false);
+      setVoiceStatus('');
+      const message = event?.error?.message || 'Microphone error occurred';
+      setVoiceError(message);
+      Alert.alert('Voice error', message);
+    };
+
+    (async () => {
+      try {
+        await Voice?.requestPermissions?.();
+        const available = await Voice?.isAvailable?.();
+        if (typeof available === 'boolean') {
+          setVoiceAvailable(available);
+        }
+      } catch (err) {
+        console.error('Voice availability error:', err);
+        setVoiceAvailable(false);
+      }
+    })();
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners).catch(() => {});
+    };
+  }, [hasPro, handleVoiceResult]);
+
+  const selectedCount = selectedTaskIds.length;
+  const hasTasksToSelect = tasksToShow.length > 0;
+  const allSelected = selectedCount > 0 && selectedCount === tasksToShow.length;
+
+  const handleToggleSelectionMode = useCallback(() => {
+    if (!hasPro) {
+      if (typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('pro');
+      }
+      return;
+    }
+    setIsSelectionMode((prev) => {
+      if (prev) {
+        setSelectedTaskIds([]);
+      }
+      return !prev;
+    });
+  }, [hasPro, onRequestUpgrade]);
+
+  const handleSelectTask = useCallback((taskId) => {
+    setSelectedTaskIds((prev) => {
+      if (prev.includes(taskId)) {
+        return prev.filter((id) => id !== taskId);
+      }
+      return [...prev, taskId];
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (!tasksToShow.length) return;
+    const allIds = tasksToShow.map((task) => task.id);
+    setSelectedTaskIds(allIds);
+  }, [tasksToShow]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTaskIds([]);
+  }, []);
+
+  const handleBulkComplete = useCallback(() => {
+    if (!selectedCount) return;
+    completeTasksBulk(selectedTaskIds);
+    Alert.alert('Tasks updated', 'Selected tasks marked as done.');
+    setSelectedTaskIds([]);
+    setIsSelectionMode(false);
+  }, [selectedCount, selectedTaskIds, completeTasksBulk]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (!selectedCount) return;
+    Alert.alert(
+      'Delete tasks',
+      `Delete ${selectedCount} selected task${selectedCount === 1 ? '' : 's'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteTasksBulk(selectedTaskIds);
+            setSelectedTaskIds([]);
+            setIsSelectionMode(false);
+          },
+        },
+      ],
+    );
+  }, [selectedCount, selectedTaskIds, deleteTasksBulk]);
+
   return (
     <ScrollView
       style={homeStyles.screen}
@@ -796,14 +1074,61 @@ export default function HomePage({
           placeholderTextColor={palette.inputPlaceholder}
           value={newTask}
           onChangeText={setNewTask}
-          onSubmitEditing={addTask}
-          returnKeyType="done"
-        />
+        onSubmitEditing={addTask}
+        returnKeyType="done"
+      />
 
-        <View style={homeStyles.selectListWrapper}>
-          <SelectList
-            setSelected={handlePrioritySelect}
-            data={prioritySelectOptions}
+      <View style={homeStyles.inputActionsRow}>
+        <TouchableOpacity
+          style={[
+            homeStyles.actionChip,
+            (!hasPro || !voiceAvailable) && homeStyles.actionChipDisabled,
+            isListening && homeStyles.actionChipActive,
+          ]}
+          onPress={handleVoicePress}
+          activeOpacity={hasPro ? 0.85 : 1}
+        >
+          <MaterialIcons
+            name={isListening ? 'hearing' : 'mic'}
+            size={18}
+            color={hasPro ? palette.accent : palette.textSecondary}
+          />
+          <Text style={homeStyles.actionChipText}>
+            {hasPro ? (isListening ? 'Listening…' : 'Voice task') : 'Voice (PRO)'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            homeStyles.actionChip,
+            !hasPro && homeStyles.actionChipDisabled,
+            isSelectionMode && homeStyles.actionChipActive,
+          ]}
+          onPress={handleToggleSelectionMode}
+          activeOpacity={hasPro ? 0.85 : 1}
+        >
+          <MaterialIcons
+            name={isSelectionMode ? 'close' : 'checklist'}
+            size={18}
+            color={hasPro ? palette.accent : palette.textSecondary}
+          />
+          <Text style={homeStyles.actionChipText}>
+            {hasPro ? (isSelectionMode ? 'Cancel select' : 'Multi-select') : 'Multi-select (PRO)'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {!!voiceStatus && (
+        <Text style={homeStyles.voiceStatusText}>{voiceStatus}</Text>
+      )}
+      {!!voiceError && (
+        <Text style={homeStyles.voiceErrorText}>{voiceError}</Text>
+      )}
+
+      <View style={homeStyles.selectListWrapper}>
+        <SelectList
+          setSelected={handlePrioritySelect}
+          data={prioritySelectOptions}
             save="key"
             placeholder="Priority"
             defaultOption={priorityDefaultOption}
@@ -904,6 +1229,51 @@ export default function HomePage({
           returnKeyType="search"
         />
 
+        {hasPro && isSelectionMode && (
+          <View style={homeStyles.bulkActionsBar}>
+            <Text style={homeStyles.bulkSelectedText}>
+              {selectedCount} selected
+            </Text>
+            <View style={homeStyles.bulkButtons}>
+              <TouchableOpacity
+                style={[
+                  homeStyles.bulkButton,
+                  (!hasTasksToSelect || allSelected) && homeStyles.bulkButtonDisabled,
+                ]}
+                onPress={handleSelectAll}
+                disabled={!hasTasksToSelect || allSelected}
+              >
+                <MaterialIcons name="select-all" size={18} color={palette.accent} />
+                <Text style={homeStyles.bulkButtonText}>Select all</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[homeStyles.bulkButton, !selectedCount && homeStyles.bulkButtonDisabled]}
+                onPress={handleClearSelection}
+                disabled={!selectedCount}
+              >
+                <MaterialIcons name="clear" size={18} color={palette.accent} />
+                <Text style={homeStyles.bulkButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[homeStyles.bulkPrimaryButton, !selectedCount && homeStyles.bulkButtonDisabled]}
+                onPress={handleBulkComplete}
+                disabled={!selectedCount}
+              >
+                <MaterialIcons name="task-alt" size={18} color={palette.addButtonText} />
+                <Text style={homeStyles.bulkPrimaryButtonText}>Mark done</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[homeStyles.bulkDangerButton, !selectedCount && homeStyles.bulkButtonDisabled]}
+                onPress={handleBulkDelete}
+                disabled={!selectedCount}
+              >
+                <MaterialIcons name="delete" size={18} color="#fff" />
+                <Text style={homeStyles.bulkDangerButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View style={homeStyles.taskList}>
           {tasksToShow.length ? (
             tasksToShow.map((task) => (
@@ -914,6 +1284,9 @@ export default function HomePage({
                 onToggle={() => toggleTask(task.id)}
                 onToggleImportant={() => toggleImportant(task.id)}
                 onToggleWishlist={() => toggleWishlist(task.id)}
+                selectionMode={hasPro && isSelectionMode}
+                selected={selectedTaskIds.includes(task.id)}
+                onSelectToggle={() => handleSelectTask(task.id)}
                 theme={theme}
                 fontScale={fontScale}
               />

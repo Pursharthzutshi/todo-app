@@ -455,6 +455,26 @@ function AppContent() {
     }
   }, [updateAdFreeStatus]);
 
+  const completeTasksBulk = useCallback((ids = []) => {
+    if (!Array.isArray(ids) || !ids.length) return;
+    const idSet = new Set(ids);
+    setTasks(prev => {
+      const newList = prev.map(task => (idSet.has(task.id) ? { ...task, completed: true } : task));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => console.error(e));
+      return newList;
+    });
+  }, []);
+
+  const deleteTasksBulk = useCallback((ids = []) => {
+    if (!Array.isArray(ids) || !ids.length) return;
+    const idSet = new Set(ids);
+    setTasks(prev => {
+      const newList = prev.filter(task => !idSet.has(task.id));
+      AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(newList)).catch(e => console.error(e));
+      return newList;
+    });
+  }, []);
+
   const requestUpgrade = useCallback((target = 'pro') => {
     console.log('Upgrade requested for:', target);
     setCurrentView('settings');
@@ -649,6 +669,8 @@ function AppContent() {
     hasPro,
     setHasAdFree: updateAdFreeStatus,
     setHasPro: updateProStatus,
+    completeTasksBulk,
+    deleteTasksBulk,
     onRequestUpgrade: requestUpgrade,
     savedTodoTasks,
     selectedPriority,
