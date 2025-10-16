@@ -6,6 +6,7 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
@@ -196,14 +197,12 @@ const HOME_THEME_VARIANTS = {
 Object.assign(HOME_THEMES, HOME_THEME_VARIANTS);
 
 const PRO_PRIORITY_OPTIONS = [
-  { key: 'normal', value: 'Normal' },
-  { key: 'low', value: 'Low' },
-  { key: 'medium', value: 'Medium' },
-  { key: 'high', value: 'High' },
-  { key: 'critical', value: 'Critical' },
+  { key: 'normal', value: 'Normal', isPro: false },
+  { key: 'low', value: 'Low', isPro: true },
+  { key: 'medium', value: 'Medium', isPro: true },
+  { key: 'high', value: 'High', isPro: true },
+  { key: 'critical', value: 'Critical', isPro: true },
 ];
-
-const FREE_PRIORITY_OPTIONS = [{ key: 'normal', value: 'Normal' }];
 
 const scaleFont = (value, multiplier) =>
   Math.round(value * multiplier * 100) / 100;
@@ -272,9 +271,19 @@ export default function HomePage({
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
   const bottomInset = safeAreaInsets?.bottom ?? 0;
-  const priorityOptions = useMemo(
-    () => (hasPro ? PRO_PRIORITY_OPTIONS : FREE_PRIORITY_OPTIONS),
-    [hasPro],
+  const priorityOptions = useMemo(() => PRO_PRIORITY_OPTIONS, []);
+
+  const prioritySelectOptions = useMemo(
+    () =>
+      priorityOptions.map((option) => ({
+        key: option.key,
+        value:
+          option.isPro && !hasPro
+            ? `${option.value} (PRO)`
+            : option.value,
+        disabled: option.isPro && !hasPro,
+      })),
+    [priorityOptions, hasPro],
   );
 
   const priorityDefault = useMemo(() => {
@@ -284,16 +293,33 @@ export default function HomePage({
       priorityOptions[0]
     );
   }, [selectedPriority, priorityOptions]);
+
+  const priorityDefaultOption = useMemo(
+    () => ({
+      key: priorityDefault.key,
+      value:
+        priorityDefault.isPro && !hasPro
+          ? `${priorityDefault.value} (PRO)`
+          : priorityDefault.value,
+    }),
+    [priorityDefault, hasPro],
+  );
+
   const handlePrioritySelect = useCallback(
-    (nextValue) => {
-      const match = priorityOptions.find(
-        (option) =>
-          option.value === nextValue ||
-          String(option.key) === String(nextValue),
-      );
-      setSelectedPriority(match ? match.value : nextValue);
+    (nextKey) => {
+      const match = priorityOptions.find((option) => option.key === nextKey);
+      if (!match) return;
+      if (match.isPro && !hasPro) {
+        if (typeof onRequestUpgrade === 'function') {
+          onRequestUpgrade('pro');
+        }
+        Alert.alert('Pro required', 'Upgrade to Pro to assign advanced priority levels.');
+        setSelectedPriority('Normal');
+        return;
+      }
+      setSelectedPriority(match.value);
     },
-    [priorityOptions, setSelectedPriority],
+    [priorityOptions, hasPro, onRequestUpgrade, setSelectedPriority],
   );
 
   const homeStyles = useMemo(
@@ -560,7 +586,7 @@ export default function HomePage({
           textAlign: 'center',
         },
       }),
-    [palette, theme, NAV_HEIGHT, bottomInset, fontScale],
+    [palette, theme, NAV_HEIGHT, bottomInset, fontScale, hasPro],
   );
 
   const selectedDayDetails = useMemo(() => {
@@ -777,10 +803,10 @@ export default function HomePage({
         <View style={homeStyles.selectListWrapper}>
           <SelectList
             setSelected={handlePrioritySelect}
-            data={priorityOptions}
-            save="value"
-            placeholder={hasPro ? 'Priority' : 'Priority (Pro)'}
-            defaultOption={priorityDefault}
+            data={prioritySelectOptions}
+            save="key"
+            placeholder="Priority"
+            defaultOption={priorityDefaultOption}
             search={false}
             boxStyles={{
               backgroundColor: palette.inputBackground,

@@ -192,7 +192,6 @@ const BASE_THEME_CHOICES = [
 ];
 
 const PRO_THEME_CHOICES = [
-  ...BASE_THEME_CHOICES,
   {
     value: 'Pastel',
     title: 'Pastel',
@@ -224,6 +223,8 @@ const PRO_THEME_CHOICES = [
     icon: 'favorite',
   },
 ];
+
+const ALL_THEME_CHOICES = [...BASE_THEME_CHOICES, ...PRO_THEME_CHOICES];
 
 const fontChoices = [
   {
@@ -515,6 +516,20 @@ const createThemedStyles = (palette, fontScale = 1) =>
       marginTop: 8,
       fontStyle: 'italic',
     },
+    proBadge: {
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      alignSelf: 'flex-start',
+      backgroundColor: palette.accentSoft,
+      marginBottom: 6,
+    },
+    proBadgeText: {
+      color: palette.accent,
+      fontSize: 10 * fontScale,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+    },
     textArea: {
       backgroundColor: palette.inputBackground,
       borderRadius: 18,
@@ -779,10 +794,7 @@ export default function SettingsPage({
     [palette, fontScale],
   );
 
-  const availableThemeChoices = useMemo(
-    () => (hasPro ? PRO_THEME_CHOICES : BASE_THEME_CHOICES),
-    [hasPro],
-  );
+  const availableThemeChoices = useMemo(() => ALL_THEME_CHOICES, []);
 
   const adFreeCaption = hasAdFree
     ? 'Ad-free access is active on this device.'
@@ -921,6 +933,8 @@ export default function SettingsPage({
         <Text style={themedStyles.inputLabel}>{content.theme}</Text>
         <View style={themedStyles.pillGroup}>
           {availableThemeChoices.map((option) => {
+            const isProTheme = !BASE_THEME_CHOICES.some((base) => base.value === option.value);
+            const locked = isProTheme && !hasPro;
             const selected = theme === option.value;
             return (
               <TouchableOpacity
@@ -928,9 +942,11 @@ export default function SettingsPage({
                 style={[
                   themedStyles.optionPill,
                   selected && themedStyles.optionPillActive,
+                  locked && themedStyles.optionPillDisabled,
                 ]}
                 onPress={() => handleSelect('theme', option.value)}
-                activeOpacity={0.9}
+                activeOpacity={locked ? 1 : 0.9}
+                disabled={locked}
               >
                 <View
                   style={[
@@ -945,6 +961,11 @@ export default function SettingsPage({
                   />
                 </View>
                 <View style={themedStyles.optionPillContent}>
+                  {locked && (
+                    <View style={themedStyles.proBadge}>
+                      <Text style={themedStyles.proBadgeText}>PRO</Text>
+                    </View>
+                  )}
                   <Text
                     style={[
                       themedStyles.optionPillText,
@@ -1002,6 +1023,11 @@ export default function SettingsPage({
                   />
                 </View>
                 <View style={themedStyles.optionPillContent}>
+                  {locked && (
+                    <View style={themedStyles.proBadge}>
+                      <Text style={themedStyles.proBadgeText}>PRO</Text>
+                    </View>
+                  )}
                   <Text
                     style={[
                       themedStyles.optionPillText,
