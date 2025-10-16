@@ -192,8 +192,8 @@ export default function App() {
   const [selectedPriority, setSelectedPriority] = useState('');
   const [searchAllTodoListItem, setSearchAllTodoListItem] = useState('');
   const [selectedDueDateKey, setSelectedDueDateKey] = useState('none');
-  const [savedTodoTasks, setSavedTodoTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
   const [tasks, setTasks] = useState(() => DEFAULT_TASKS.map(task => ({ ...task })));
+  const savedTodoTasks = useMemo(() => tasks.map(task => ({ ...task })), [tasks]);
   const selectedDueDateLabel = useMemo(() => {
     if (!selectedDueDateKey || selectedDueDateKey === 'none') return 'No due date';
     const date = startOfDay(selectedDueDateKey);
@@ -216,7 +216,6 @@ export default function App() {
           if (Array.isArray(parsed)) {
             const normalized = parsed.map(normalizeTask);
             setTasks(normalized);
-            setSavedTodoTasks(normalized.map(task => ({ ...task })));
           } else {
             console.warn('Stored tasks is not an array, ignoring.');
           }
@@ -257,7 +256,6 @@ export default function App() {
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => {
           console.error('Failed to save tasks to AsyncStorage', e);
         });
-        setSavedTodoTasks(newList.map(task => ({ ...task })));
         return newList;
       });
 
@@ -272,7 +270,6 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
@@ -282,7 +279,6 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, wishlist: !t.wishlist } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
@@ -292,7 +288,6 @@ export default function App() {
     setTasks(prev => {
       const newList = prev.map(t => (t.id === id ? { ...t, important: !t.important } : t));
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newList)).catch(e => console.error(e));
-      setSavedTodoTasks(newList.map(task => ({ ...task })));
       return newList;
     });
   }
