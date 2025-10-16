@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
@@ -553,9 +553,18 @@ export default function App() {
     }
   }
 
+  const statusBarStyle = theme === 'Dark' ? 'light-content' : 'dark-content';
+  const statusBarBackground =
+    theme === 'Dark' ? '#0B1120' : '#ffffff';
+
   return (
-    <SafeAreaView style={dynamicStyles.appContainer}>
-      
+    <>
+      <StatusBar
+        barStyle={statusBarStyle}
+        backgroundColor={statusBarBackground}
+      />
+      <SafeAreaView style={dynamicStyles.appContainer}>
+        
       {renderCurrentView()}
 
       <FooterNavigationBar
@@ -564,6 +573,7 @@ export default function App() {
         setCurrentView={setCurrentView}
         NAV_HEIGHT={NAV_HEIGHT}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }

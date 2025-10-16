@@ -5,7 +5,7 @@ export default StyleSheet.create({
   appContainer: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 16,
+    paddingTop: 6,
     paddingBottom: 16,
   },
   // Add a default text style that can be inherited
