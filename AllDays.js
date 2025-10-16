@@ -42,7 +42,7 @@ export default function AllDays({
   const palette = DAY_THEMES[theme] || DAY_THEMES.Light;
 
   const displayDays = useMemo(
-    () => [{ id: 'all', name: 'All', fullName: 'All Days' }, ...Days],
+    () => [{ id: 'all', name: 'Weekly', fullName: 'Weekly summary' }, ...Days],
     [Days],
   );
 

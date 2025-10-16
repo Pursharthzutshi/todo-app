@@ -183,7 +183,7 @@ export default function App() {
   
   // Force re-render when theme or font size changes
   const [forceUpdate, setForceUpdate] = useState(0);
-  const [dayFilter, setDayFilter] = useState(() => String(new Date().getDay()));
+  const [dayFilter, setDayFilter] = useState('all');
   const [currentView, setCurrentView] = useState('today');
   const [showMenu, setShowMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
