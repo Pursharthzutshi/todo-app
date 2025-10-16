@@ -71,6 +71,14 @@ const HOME_THEMES = {
   },
 };
 
+const PRIORITY_OPTIONS = [
+  { key: '1', value: 'Urgent' },
+  { key: '2', value: 'High' },
+  { key: '3', value: 'Medium' },
+  { key: '4', value: 'Low' },
+  { key: '5', value: 'None' },
+];
+
 const scaleFont = (value, multiplier) =>
   Math.round(value * multiplier * 100) / 100;
 
@@ -134,17 +142,24 @@ export default function HomePage({
   setTheme,
 }) {
   const palette = HOME_THEMES[theme] || HOME_THEMES.Light;
-  const priorityOptions = [
-    { key: '1', value: 'Urgent' },
-    { key: '2', value: 'High' },
-    { key: '3', value: 'Medium' },
-    { key: '4', value: 'Low' },
-    { key: '5', value: 'None' },
-  ];
   const priorityDefault = useMemo(() => {
     const value = selectedPriority || 'None';
-    return priorityOptions.find((option) => option.value === value) || priorityOptions[4];
+    return (
+      PRIORITY_OPTIONS.find((option) => option.value === value) ||
+      PRIORITY_OPTIONS[4]
+    );
   }, [selectedPriority]);
+  const handlePrioritySelect = useCallback(
+    (nextValue) => {
+      const match = PRIORITY_OPTIONS.find(
+        (option) =>
+          option.value === nextValue ||
+          String(option.key) === String(nextValue),
+      );
+      setSelectedPriority(match ? match.value : nextValue);
+    },
+    [setSelectedPriority],
+  );
 
   const homeStyles = useMemo(
     () =>
@@ -607,11 +622,12 @@ export default function HomePage({
 
         <View style={homeStyles.selectListWrapper}>
           <SelectList
-            setSelected={setSelectedPriority}
-            data={priorityOptions}
+            setSelected={handlePrioritySelect}
+            data={PRIORITY_OPTIONS}
             save="value"
             placeholder="Priority"
             defaultOption={priorityDefault}
+            search={false}
             boxStyles={{
               backgroundColor: palette.inputBackground,
               borderRadius: 14,
