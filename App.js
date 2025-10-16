@@ -21,6 +21,7 @@ const STORAGE_KEYS = {
   tasks: 'TASKS',
   adFree: 'HAS_AD_FREE',
   pro: 'HAS_PRO',
+  folders: 'FOLDERS',
 };
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -29,6 +30,8 @@ const DAYS = DAY_NAMES.map((fullName, id) => ({
   name: fullName.slice(0, 3),
   fullName,
 }));
+
+const BASE_FOLDERS = ['Personal', 'Work'];
 
 const THEME_COLOR_MAP = {
   Light: {
@@ -190,6 +193,9 @@ const normalizeTask = (task) => {
     normalized.priority = legacyPriorityMap[normalized.priority];
   }
 
+  const folderName = typeof normalized.folder === 'string' ? normalized.folder.trim() : '';
+  normalized.folder = folderName || BASE_FOLDERS[0];
+
   const dueDate = getTaskDueDate(normalized);
   const createdDate = normalized.createdAt ? startOfDay(normalized.createdAt) : null;
   const fallbackDate =
@@ -246,6 +252,7 @@ const DEFAULT_TASKS = (() => {
       important: false,
       wishlist: false,
       priority: 'Normal',
+      folder: 'Personal',
       dueDateISO: toISODate(today),
       time: '10:00',
     },
@@ -256,6 +263,7 @@ const DEFAULT_TASKS = (() => {
       important: true,
       wishlist: false,
       priority: 'Normal',
+      folder: 'Work',
       dueDateISO: toISODate(addDays(today, -1)),
     },
     {
@@ -265,6 +273,7 @@ const DEFAULT_TASKS = (() => {
       important: true,
       wishlist: false,
       priority: 'Normal',
+      folder: 'Personal',
       dueDateISO: toISODate(addDays(today, 2)),
     },
   ].map(normalizeTask);
@@ -290,6 +299,9 @@ function AppContent() {
   const savedTodoTasks = useMemo(() => tasks.map(task => ({ ...task })), [tasks]);
   const [hasAdFree, setHasAdFree] = useState(false);
   const [hasPro, setHasPro] = useState(false);
+  const [folders, setFolders] = useState(() => [...BASE_FOLDERS]);
+  const [activeFolder, setActiveFolder] = useState('All');
+  const [selectedFolder, setSelectedFolder] = useState(BASE_FOLDERS[0]);
   const insets = typeof useSafeAreaInsets === 'function'
     ? useSafeAreaInsets()
     : { top: 0, bottom: 0, left: 0, right: 0 };
@@ -315,6 +327,51 @@ function AppContent() {
       setSelectedPriority('Normal');
     }
   }, [hasPro]);
+  useEffect(() => {
+    if (hasPro) {
+      AsyncStorage.getItem(STORAGE_KEYS.folders)
+        .then((raw) => {
+          if (!raw) return;
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const unique = Array.from(new Set([...BASE_FOLDERS, ...parsed]));
+              setFolders(unique);
+            }
+          } catch (err) {
+            console.warn('Failed to restore folders', err);
+          }
+        })
+        .catch(() => {});
+    } else {
+      const base = [...BASE_FOLDERS];
+      setFolders(base);
+      setSelectedFolder(base[0]);
+      setActiveFolder('All');
+      setTasks((prev) => {
+        const adjusted = prev.map((task) => (
+          BASE_FOLDERS.includes(task.folder)
+            ? task
+            : { ...task, folder: BASE_FOLDERS[0] }
+        ));
+        AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(adjusted)).catch(() => {});
+        return adjusted;
+      });
+    }
+  }, [hasPro]);
+  useEffect(() => {
+    if (hasPro) {
+      AsyncStorage.setItem(STORAGE_KEYS.folders, JSON.stringify(folders)).catch((err) => {
+        console.error('Failed to persist folders', err);
+      });
+    } else {
+      AsyncStorage.removeItem(STORAGE_KEYS.folders).catch(() => {});
+    }
+  }, [folders, hasPro]);
+  useEffect(() => {
+    setSelectedFolder((current) => (folders.includes(current) ? current : (folders[0] || BASE_FOLDERS[0])));
+    setActiveFolder((current) => (current === 'All' || folders.includes(current) ? current : 'All'));
+  }, [folders]);
   const selectedDueDateLabel = useMemo(() => {
     if (!selectedDueDateKey || selectedDueDateKey === 'none') return 'No due date';
     const date = startOfDay(selectedDueDateKey);
@@ -337,15 +394,16 @@ function AppContent() {
           'theme',
           'fontSize',
         ];
-        const entries = await AsyncStorage.multiGet(keysToLoad);
+        const entries = await AsyncStorage.multiGet([...keysToLoad, STORAGE_KEYS.folders]);
         const stored = Object.fromEntries(entries);
+
+        let normalizedTasks = DEFAULT_TASKS.map(task => ({ ...task }));
 
         const rawTasks = stored[STORAGE_KEYS.tasks];
         if (rawTasks) {
           const parsed = JSON.parse(rawTasks);
           if (Array.isArray(parsed)) {
-            const normalized = parsed.map(normalizeTask);
-            setTasks(normalized);
+            normalizedTasks = parsed.map(normalizeTask);
           } else {
             console.warn('Stored tasks is not an array, ignoring.');
           }
@@ -357,13 +415,62 @@ function AppContent() {
         }
 
         const rawPro = stored[STORAGE_KEYS.pro];
+        let proActive = false;
         if (rawPro !== undefined && rawPro !== null) {
-          const proActive = rawPro === 'true';
+          proActive = rawPro === 'true';
           setHasPro(proActive);
           if (proActive) {
             setHasAdFree(true);
           }
         }
+
+        if (!proActive) {
+          const adjusted = normalizedTasks.map((task) => (
+            BASE_FOLDERS.includes(task.folder)
+              ? task
+              : { ...task, folder: BASE_FOLDERS[0] }
+          ));
+          normalizedTasks = adjusted;
+          AsyncStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(adjusted)).catch((e) => {
+            console.error('Failed to sync tasks after folder reset', e);
+          });
+        }
+
+        setTasks(normalizedTasks);
+
+        const storedFoldersRaw = stored[STORAGE_KEYS.folders];
+        let storedFolders = [];
+        if (storedFoldersRaw) {
+          try {
+            const parsedFolders = JSON.parse(storedFoldersRaw);
+            if (Array.isArray(parsedFolders)) {
+              storedFolders = parsedFolders
+                .map((name) => (typeof name === 'string' ? name.trim() : ''))
+                .filter(Boolean);
+            }
+          } catch (err) {
+            console.warn('Failed to parse stored folders', err);
+          }
+        }
+
+        const taskDerivedFolders = Array.from(new Set(
+          normalizedTasks
+            .map((task) => (typeof task.folder === 'string' ? task.folder.trim() : ''))
+            .filter(Boolean),
+        ));
+
+        const initialFolders = proActive
+          ? Array.from(new Set([...BASE_FOLDERS, ...storedFolders, ...taskDerivedFolders]))
+          : [...BASE_FOLDERS];
+
+        setFolders(initialFolders.length ? initialFolders : [...BASE_FOLDERS]);
+        setSelectedFolder((current) => (
+          initialFolders.includes(current) ? current : (initialFolders[0] || BASE_FOLDERS[0])
+        ));
+        setActiveFolder((current) => {
+          if (current === 'All') return 'All';
+          return initialFolders.includes(current) ? current : 'All';
+        });
 
         const savedTheme = stored.theme;
         const savedFontSize = stored.fontSize;
@@ -390,6 +497,11 @@ function AppContent() {
         important: false,
         wishlist: false,
         priority: selectedPriority,
+        folder: (() => {
+          const fallbackFolder = folders[0] || BASE_FOLDERS[0];
+          const desired = hasPro ? selectedFolder : BASE_FOLDERS[0];
+          return folders.includes(desired) ? desired : fallbackFolder;
+        })(),
         createdAt: new Date().toISOString(),
         dueDateISO: dueDate ? toISODate(dueDate) : null,
         dueDateLabel: dueDate ? describeRelativeDate(dueDate) : '',
@@ -514,13 +626,17 @@ function AppContent() {
       }
     }
 
+    if (activeFolder && activeFolder !== 'All') {
+      list = list.filter(task => (task.folder || BASE_FOLDERS[0]) === activeFolder);
+    }
+
     const query = (searchQuery || '').trim().toLowerCase();
     if (query) {
       list = list.filter(task => (task.title || '').toLowerCase().includes(query));
     }
 
     return list.map(normalizeTask);
-  }, [tasks, activeFilter, searchQuery, dayFilter]);
+  }, [tasks, activeFilter, searchQuery, dayFilter, activeFolder]);
 
   // Get dynamic styles based on theme and font size
   const getAppStyles = () => {
@@ -672,6 +788,20 @@ function AppContent() {
     completeTasksBulk,
     deleteTasksBulk,
     onRequestUpgrade: requestUpgrade,
+    folders,
+    activeFolder,
+    setActiveFolder: (value) => {
+      if (value === 'All' || folders.includes(value)) {
+        setActiveFolder(value);
+      }
+    },
+    selectedFolder,
+    setSelectedFolder: (value) => {
+      if (folders.includes(value)) {
+        setSelectedFolder(value);
+      }
+    },
+    addFolder: (name) => handleAddFolder(name),
     savedTodoTasks,
     selectedPriority,
     setSelectedPriority,
