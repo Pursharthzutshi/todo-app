@@ -8,9 +8,8 @@ export default StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 16,
   },
-  // Add a default text style that can be inherited
   defaultText: {
-    fontSize: 16, // Base font size
+    fontSize: 16, 
   },
 
   innerContainer: {
@@ -112,13 +111,12 @@ export default StyleSheet.create({
     paddingVertical: 10,
   },
 
-  // taskCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, backgroundColor: '#fafafa',shadowColor: '#000', shadowOffset: { width: 4, height: 2 },    elevation: 1,   shadowOpacity: 0.25, borderRadius: 10, marginBottom: 10 },
 checkbox: {
   width: 30,
   height: 30,
   borderRadius: 15,
   borderWidth: 1,
-  borderColor: '#D1D5DB', // soft gray
+  borderColor: '#D1D5DB', 
   justifyContent: 'center',
   alignItems: 'center',
   marginRight: 12,
@@ -126,12 +124,12 @@ checkbox: {
 },
 
 checkedBox: {
-  borderColor: '#10B981', // modern green
-  backgroundColor: '#ECFDF5', // soft mint green background
+  borderColor: '#10B981', 
+  backgroundColor: '#ECFDF5', 
 },
 
 checkmark: {
-  color: '#059669', // darker green for good contrast
+  color: '#059669',
   fontWeight: '900',
   fontSize: 16,
   textAlign: 'center',

@@ -1445,6 +1445,28 @@ export default function HomePage({
     });
   }, []);
 
+  const handleStartTaskSelection = useCallback((taskId) => {
+    if (!hasPro) {
+      if (typeof onRequestUpgrade === 'function') {
+        onRequestUpgrade('pro');
+      }
+      return;
+    }
+
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+      setSelectedTaskIds([taskId]);
+      return;
+    }
+
+    setSelectedTaskIds((prev) => {
+      if (prev.includes(taskId)) {
+        return prev;
+      }
+      return [...prev, taskId];
+    });
+  }, [hasPro, isSelectionMode, onRequestUpgrade]);
+
   const handleSelectAll = useCallback(() => {
     if (!tasksToShow.length) return;
     const allIds = tasksToShow.map((task) => task.id);
@@ -2152,6 +2174,7 @@ export default function HomePage({
                 selectionMode={hasPro && isSelectionMode}
                 selected={selectedTaskIds.includes(task.id)}
                 onSelectToggle={() => handleSelectTask(task.id)}
+                onLongPressSelect={() => handleStartTaskSelection(task.id)}
                 theme={theme}
                 fontScale={fontScale}
               />

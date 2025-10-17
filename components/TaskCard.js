@@ -158,6 +158,7 @@ export default function TaskCard({
   selectionMode = false,
   selected = false,
   onSelectToggle = () => {},
+  onLongPressSelect = () => {},
 }) {
   const palette = CARD_THEMES[theme] || CARD_THEMES.Light;
 
@@ -312,6 +313,7 @@ export default function TaskCard({
     <TouchableOpacity
       activeOpacity={selectionMode ? 0.85 : 1}
       onPress={selectionMode ? onSelectToggle : undefined}
+      onLongPress={onLongPressSelect}
       style={containerStyles}
     >
       {selectionMode ? (
