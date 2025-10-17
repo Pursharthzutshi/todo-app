@@ -1093,23 +1093,24 @@ export default function HomePage({
           top: 0,
           bottom: 0,
           left: 0,
-          right: 80,
+          right: 0,
         },
         quickFilterContentWrapper: {
           position: 'absolute',
           top: 0,
           bottom: 0,
-          right: -20,
+          right: -28,
           justifyContent: 'center',
           alignItems: 'flex-end',
           paddingVertical: 16,
+          paddingRight: 0,
         },
         quickFilterContent: {
           flexDirection: 'row',
           alignItems: 'center',
         },
         quickFilterPopup: {
-          marginRight: 10,
+          marginRight: 14,
           paddingVertical: 6,
           paddingHorizontal: 10,
           borderRadius: 16,
@@ -1121,15 +1122,15 @@ export default function HomePage({
           shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.3 : 0.16,
           shadowRadius: 18,
           elevation: 8,
-          width: 150,
+          width: 160,
         },
         quickFilterPopupArrow: {
           position: 'absolute',
-          right: -7,
+          right: -6,
           top: '50%',
-          marginTop: -7,
-          width: 14,
-          height: 14,
+          marginTop: -6,
+          width: 12,
+          height: 12,
           backgroundColor: palette.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: palette.cardBorder,
@@ -1155,9 +1156,9 @@ export default function HomePage({
           color: palette.chipIcon,
         },
         quickFilterButton: {
-          width: 40,
-          height: 64,
-          borderRadius: 20,
+          width: 48,
+          height: 48,
+          borderRadius: 24,
           backgroundColor: palette.accent,
           justifyContent: 'center',
           alignItems: 'center',
@@ -1166,14 +1167,6 @@ export default function HomePage({
           shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.32 : 0.18,
           shadowRadius: 12,
           elevation: 6,
-        },
-        quickFilterButtonInner: {
-          width: 34,
-          height: 58,
-          borderRadius: 18,
-          backgroundColor: palette.accent,
-          justifyContent: 'center',
-          alignItems: 'center',
         },
         quickFilterButtonIcon: {
           transform: [{ rotate: '-90deg' }],
@@ -2314,14 +2307,12 @@ export default function HomePage({
                   onPress={toggleQuickFilterPopup}
                   activeOpacity={0.85}
                 >
-                  <View style={homeStyles.quickFilterButtonInner}>
-                    <MaterialIcons
-                      name={isQuickFilterPopupVisible ? 'close' : 'tune'}
-                      size={20}
-                      color="#FFFFFF"
-                      style={isQuickFilterPopupVisible ? undefined : homeStyles.quickFilterButtonIcon}
-                    />
-                  </View>
+                  <MaterialIcons
+                    name={isQuickFilterPopupVisible ? 'close' : 'tune'}
+                    size={22}
+                    color="#FFFFFF"
+                    style={isQuickFilterPopupVisible ? undefined : homeStyles.quickFilterButtonIcon}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
