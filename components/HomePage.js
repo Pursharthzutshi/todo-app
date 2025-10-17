@@ -291,6 +291,7 @@ export default function HomePage({
   const voiceHandledRef = useRef(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const autoExitSelectionRef = useRef(false);
   const [showAddFolderInput, setShowAddFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [isManageModalVisible, setIsManageModalVisible] = useState(false);
@@ -1431,6 +1432,10 @@ export default function HomePage({
     setIsSelectionMode((prev) => {
       if (prev) {
         setSelectedTaskIds([]);
+        autoExitSelectionRef.current = false;
+      }
+      if (!prev) {
+        autoExitSelectionRef.current = false;
       }
       return !prev;
     });
@@ -1439,8 +1444,10 @@ export default function HomePage({
   const handleSelectTask = useCallback((taskId) => {
     setSelectedTaskIds((prev) => {
       if (prev.includes(taskId)) {
-        return prev.filter((id) => id !== taskId);
+        const next = prev.filter((id) => id !== taskId);
+        return next;
       }
+      autoExitSelectionRef.current = true;
       return [...prev, taskId];
     });
   }, []);
@@ -1455,6 +1462,7 @@ export default function HomePage({
 
     if (!isSelectionMode) {
       setIsSelectionMode(true);
+      autoExitSelectionRef.current = true;
       setSelectedTaskIds([taskId]);
       return;
     }
@@ -1463,6 +1471,7 @@ export default function HomePage({
       if (prev.includes(taskId)) {
         return prev;
       }
+      autoExitSelectionRef.current = true;
       return [...prev, taskId];
     });
   }, [hasPro, isSelectionMode, onRequestUpgrade]);
@@ -1470,12 +1479,18 @@ export default function HomePage({
   const handleSelectAll = useCallback(() => {
     if (!tasksToShow.length) return;
     const allIds = tasksToShow.map((task) => task.id);
+    if (allIds.length) {
+      autoExitSelectionRef.current = true;
+    }
     setSelectedTaskIds(allIds);
   }, [tasksToShow]);
 
   const handleClearSelection = useCallback(() => {
+    if (selectedTaskIds.length) {
+      autoExitSelectionRef.current = true;
+    }
     setSelectedTaskIds([]);
-  }, []);
+  }, [selectedTaskIds]);
 
   const handleBulkComplete = useCallback(() => {
     if (!selectedCount) return;
@@ -1483,6 +1498,7 @@ export default function HomePage({
     Alert.alert('Tasks updated', 'Selected tasks marked as done.');
     setSelectedTaskIds([]);
     setIsSelectionMode(false);
+    autoExitSelectionRef.current = false;
   }, [selectedCount, selectedTaskIds, completeTasksBulk]);
 
   const handleBulkDelete = useCallback(() => {
@@ -1499,11 +1515,19 @@ export default function HomePage({
             deleteTasksBulk(selectedTaskIds);
             setSelectedTaskIds([]);
             setIsSelectionMode(false);
+            autoExitSelectionRef.current = false;
           },
         },
       ],
     );
   }, [selectedCount, selectedTaskIds, deleteTasksBulk]);
+
+  useEffect(() => {
+    if (isSelectionMode && selectedTaskIds.length === 0 && autoExitSelectionRef.current) {
+      autoExitSelectionRef.current = false;
+      setIsSelectionMode(false);
+    }
+  }, [isSelectionMode, selectedTaskIds.length]);
 
   const handleToggleAddFolderInput = useCallback(() => {
     if (!hasPro) {
