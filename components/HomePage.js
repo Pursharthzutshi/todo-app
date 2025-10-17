@@ -1156,9 +1156,9 @@ export default function HomePage({
           color: palette.chipIcon,
         },
         quickFilterButton: {
-          width: 48,
-          height: 48,
-          borderRadius: 24,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
           backgroundColor: palette.accent,
           justifyContent: 'center',
           alignItems: 'center',
@@ -2309,7 +2309,7 @@ export default function HomePage({
                 >
                   <MaterialIcons
                     name={isQuickFilterPopupVisible ? 'close' : 'tune'}
-                    size={22}
+                    size={20}
                     color="#FFFFFF"
                     style={isQuickFilterPopupVisible ? undefined : homeStyles.quickFilterButtonIcon}
                   />
