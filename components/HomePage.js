@@ -206,6 +206,8 @@ const PRO_PRIORITY_OPTIONS = [
   { key: 'critical', value: 'Critical', isPro: true },
 ];
 
+const QUICK_FILTERS = ['All', 'Today', 'Important', 'Planned'];
+
 const scaleFont = (value, multiplier) =>
   Math.round(value * multiplier * 100) / 100;
 
@@ -302,6 +304,7 @@ export default function HomePage({
   const folderChipScrollRef = useRef(null);
   const folderChipPositionsRef = useRef({});
   const priorityOptions = useMemo(() => PRO_PRIORITY_OPTIONS, []);
+  const [isQuickFilterPopupVisible, setQuickFilterPopupVisible] = useState(false);
 
   const folderOptions = useMemo(
     () => folders.map((name) => ({ key: name, value: name })),
@@ -623,37 +626,6 @@ export default function HomePage({
           height: StyleSheet.hairlineWidth,
           backgroundColor: palette.filterBorder,
           marginHorizontal: 12,
-        },
-        filterGroup: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: palette.filterBackground,
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: palette.filterBorder,
-          padding: 6,
-          marginTop: 12,
-        },
-        filterChip: {
-          flex: 1,
-          paddingVertical: 10,
-          borderRadius: 16,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginHorizontal: 4,
-        },
-        filterChipActive: {
-          backgroundColor: palette.filterActive,
-          borderColor: palette.filterActiveBorder,
-        },
-        filterChipText: {
-          fontSize: scaleFont(13, fontScale),
-          fontWeight: '600',
-          color: palette.textSecondary,
-        },
-        filterChipTextActive: {
-          color: palette.chipIcon,
         },
         sectionCard: {
           padding: 20,
@@ -1097,13 +1069,114 @@ export default function HomePage({
           color: palette.textPrimary,
           fontSize: scaleFont(14, fontScale),
         },
-        taskList: {
+        taskListContainer: {
           marginTop: 12,
+          position: 'relative',
+        },
+        taskList: {
           maxHeight: 420,
         },
         taskListContent: {
           gap: 12,
           paddingBottom: 24,
+        },
+        quickFilterOverlay: {
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 5,
+        },
+        quickFilterBackdrop: {
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 80,
+        },
+        quickFilterContentWrapper: {
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          right: -20,
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          paddingVertical: 16,
+        },
+        quickFilterContent: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        quickFilterPopup: {
+          marginRight: 10,
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 16,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.3 : 0.16,
+          shadowRadius: 18,
+          elevation: 8,
+          width: 150,
+        },
+        quickFilterPopupArrow: {
+          position: 'absolute',
+          right: -7,
+          top: '50%',
+          marginTop: -7,
+          width: 14,
+          height: 14,
+          backgroundColor: palette.card,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: palette.cardBorder,
+          borderLeftWidth: 0,
+          borderBottomWidth: 0,
+          transform: [{ rotate: '45deg' }],
+        },
+        quickFilterOption: {
+          paddingVertical: 10,
+          paddingHorizontal: 12,
+          borderRadius: 12,
+        },
+        quickFilterOptionActive: {
+          backgroundColor: palette.filterActive,
+        },
+        quickFilterOptionText: {
+          fontSize: scaleFont(14, fontScale),
+          color: palette.textSecondary,
+          fontWeight: '600',
+          textAlign: 'left',
+        },
+        quickFilterOptionTextActive: {
+          color: palette.chipIcon,
+        },
+        quickFilterButton: {
+          width: 40,
+          height: 64,
+          borderRadius: 20,
+          backgroundColor: palette.accent,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: palette.cardShadow,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: (theme === 'Dark' || theme === 'Ocean') ? 0.32 : 0.18,
+          shadowRadius: 12,
+          elevation: 6,
+        },
+        quickFilterButtonInner: {
+          width: 34,
+          height: 58,
+          borderRadius: 18,
+          backgroundColor: palette.accent,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        quickFilterButtonIcon: {
+          transform: [{ rotate: '-90deg' }],
         },
         emptyState: {
           marginTop: 20,
@@ -1441,6 +1514,15 @@ export default function HomePage({
     });
   }, [hasPro, onRequestUpgrade]);
 
+  const toggleQuickFilterPopup = useCallback(() => {
+    setQuickFilterPopupVisible((prev) => !prev);
+  }, []);
+
+  const handleQuickFilterSelect = useCallback((filter) => {
+    setActiveFilter(filter.toLowerCase());
+    setQuickFilterPopupVisible(false);
+  }, [setActiveFilter]);
+
   const handleSelectTask = useCallback((taskId) => {
     setSelectedTaskIds((prev) => {
       if (prev.includes(taskId)) {
@@ -1491,6 +1573,10 @@ export default function HomePage({
     }
     setSelectedTaskIds([]);
   }, [selectedTaskIds]);
+
+  useEffect(() => {
+    setQuickFilterPopupVisible(false);
+  }, [activeFilter]);
 
   const handleBulkComplete = useCallback(() => {
     if (!selectedCount) return;
@@ -1778,33 +1864,6 @@ export default function HomePage({
               Jump to the list that needs your focus.
             </Text>
           </View>
-        </View>
-
-        <View style={homeStyles.filterGroup}>
-          {['All', 'Today', 'Important', 'Planned'].map((filter) => {
-            const isActive =
-              activeFilter.toLowerCase() === filter.toLowerCase();
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  homeStyles.filterChip,
-                  isActive && homeStyles.filterChipActive,
-                ]}
-                onPress={() => setActiveFilter(filter.toLowerCase())}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text
-                  style={[
-                    homeStyles.filterChipText,
-                    isActive && homeStyles.filterChipTextActive,
-                  ]}
-                >
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
         </View>
 
         <AllDays
@@ -2180,35 +2239,94 @@ export default function HomePage({
           </View>
         )}
 
-        <ScrollView
-          style={homeStyles.taskList}
-          contentContainerStyle={homeStyles.taskListContent}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-        >
-          {tasksToShow.length ? (
-            tasksToShow.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                setTasks={setTasks}
-                onToggle={() => toggleTask(task.id)}
-                onToggleImportant={() => toggleImportant(task.id)}
-                onToggleWishlist={() => toggleWishlist(task.id)}
-                selectionMode={hasPro && isSelectionMode}
-                selected={selectedTaskIds.includes(task.id)}
-                onSelectToggle={() => handleSelectTask(task.id)}
-                onLongPressSelect={() => handleStartTaskSelection(task.id)}
-                theme={theme}
-                fontScale={fontScale}
+        <View style={homeStyles.taskListContainer}>
+          <ScrollView
+            style={homeStyles.taskList}
+            contentContainerStyle={homeStyles.taskListContent}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
+            {tasksToShow.length ? (
+              tasksToShow.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  setTasks={setTasks}
+                  onToggle={() => toggleTask(task.id)}
+                  onToggleImportant={() => toggleImportant(task.id)}
+                  onToggleWishlist={() => toggleWishlist(task.id)}
+                  selectionMode={hasPro && isSelectionMode}
+                  selected={selectedTaskIds.includes(task.id)}
+                  onSelectToggle={() => handleSelectTask(task.id)}
+                  onLongPressSelect={() => handleStartTaskSelection(task.id)}
+                  theme={theme}
+                  fontScale={fontScale}
+                />
+              ))
+            ) : (
+              <Text style={homeStyles.emptyState}>
+                Your list is clear—add a task to get started.
+              </Text>
+            )}
+          </ScrollView>
+
+          <View pointerEvents="box-none" style={homeStyles.quickFilterOverlay}>
+            {isQuickFilterPopupVisible && (
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => setQuickFilterPopupVisible(false)}
+                style={homeStyles.quickFilterBackdrop}
               />
-            ))
-          ) : (
-            <Text style={homeStyles.emptyState}>
-              Your list is clear—add a task to get started.
-            </Text>
-          )}
-        </ScrollView>
+            )}
+            <View pointerEvents="box-none" style={homeStyles.quickFilterContentWrapper}>
+              <View style={homeStyles.quickFilterContent}>
+                {isQuickFilterPopupVisible && (
+                  <View style={homeStyles.quickFilterPopup}>
+                    <View style={homeStyles.quickFilterPopupArrow} />
+                    {QUICK_FILTERS.map((filter) => {
+                      const isActive =
+                        activeFilter.toLowerCase() === filter.toLowerCase();
+                      return (
+                        <TouchableOpacity
+                          key={filter}
+                          style={[
+                            homeStyles.quickFilterOption,
+                            isActive && homeStyles.quickFilterOptionActive,
+                          ]}
+                          onPress={() => handleQuickFilterSelect(filter)}
+                          activeOpacity={0.85}
+                        >
+                          <Text
+                            style={[
+                              homeStyles.quickFilterOptionText,
+                              isActive && homeStyles.quickFilterOptionTextActive,
+                            ]}
+                          >
+                            {filter}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={homeStyles.quickFilterButton}
+                  onPress={toggleQuickFilterPopup}
+                  activeOpacity={0.85}
+                >
+                  <View style={homeStyles.quickFilterButtonInner}>
+                    <MaterialIcons
+                      name={isQuickFilterPopupVisible ? 'close' : 'tune'}
+                      size={20}
+                      color="#FFFFFF"
+                      style={isQuickFilterPopupVisible ? undefined : homeStyles.quickFilterButtonIcon}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
 
       <CalendarModal
